@@ -1,0 +1,43 @@
+{
+  "name": "base-runner",
+  "description": "Orchestrate multiple instances of base-methods at once.",
+  "version": "0.1.0",
+  "homepage": "https://github.com/jonschlinkert/base-runner",
+  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "repository": "jonschlinkert/base-runner",
+  "bugs": "https://github.com/jonschlinkert/base-runner/issues",
+  "license": "MIT",
+  "files": [
+    "index.js"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "async": "^1.5.0",
+    "base-methods": "^0.4.0",
+    "expand-args": "^0.3.0",
+    "export-files": "^2.1.0",
+    "extend-shallow": "^2.0.1",
+    "inflection": "^1.7.2",
+    "lazy-cache": "^0.2.4",
+    "minimist": "^1.2.0",
+    "object.omit": "^2.0.0"
+  },
+  "devDependencies": {
+    "base-cli": "^0.2.1",
+    "base-options": "^0.5.4",
+    "base-plugins": "^0.4.1",
+    "get-value": "^2.0.0",
+    "mocha": "^2.3.3"
+  },
+  "verb": {
+    "related": {
+      "list": []
+    }
+  }
+}
