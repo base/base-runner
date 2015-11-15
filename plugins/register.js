@@ -21,7 +21,12 @@ module.exports = function(config) {
     config = extend({}, runner.options, config);
 
     this.define('resolve', function(patterns, options) {
-      return resolver.resolve(patterns, options);
+      var files = resolver.resolve(patterns, options);
+      var len = files.length, i = -1;
+      while (++i < len) {
+        this.emit('resolve', files[i], options);
+      }
+      return files;
     });
 
     this.define('register', function(name, options, fn) {
@@ -29,15 +34,11 @@ module.exports = function(config) {
         fn = options;
         options = {};
       }
-      if (typeof options === 'string') {
-        return this.registerEach.apply(this, arguments);
-      }
 
       var opts = extend({cwd: ''}, config, options);
       if (typeof fn === 'function') {
-        opts.fn = fn;
-        var cfg = new Generator(name, opts);
-        // console.log(cfg)
+        var cfg = new Generator(name, opts, fn);
+        console.log(cfg)
       }
 
       this.base[single](name, opts, fn);
@@ -45,53 +46,65 @@ module.exports = function(config) {
       return this;
     });
 
-    this.define('registerEach', function(filename, pattern, options) {
-      var opts = extend({}, config, options);
-      var dirs = this.resolve(pattern, opts);
-      var len = dirs.length, i = -1;
+    this.define('registerFile', function(filepath, options) {
+      var opts = extend({cwd: ''}, config, options);
+      var cwd = path.dirname(filepath);
+      var basename = path.basename(cwd);
+      var fn = require(path.resolve(filepath));
 
-      while (++i < len) {
-        this.registerModule(filename, {cwd: dirs[i]});
+      if (typeof fn === 'function') {
+        var cfg = new Generator(name, opts, fn);
+        console.log(cfg)
       }
+
+      this.base[single](name, opts, fn);
+      this.emit('register', name);
       return this;
     });
 
-    this.define('registerModule', function(filename, options) {
-      var opts = extend({}, config, options);
-      var app = this.resolveModule(filename, {cwd: opts.cwd});
-      this.register(app.alias, app, app.fn);
-      return this;
-    });
+    // this.define('registerEach', function(filename, pattern, options) {
+    //   var opts = extend({}, config, options);
+    //   var dirs = this.resolve(pattern, opts);
+    //   var len = dirs.length, i = -1;
 
-    this.define('resolveModule', function(filename, options) {
-      return new Config(filename, extend({}, config, options));
-    });
+    //   while (++i < len) {
+    //     this.registerModule(filename, {cwd: dirs[i]});
+    //   }
+    //   return this;
+    // });
+
+    // this.define('registerModule', function(filename, options) {
+    //   var opts = extend({}, config, options);
+    //   var app = this.resolveModule(filename, {cwd: opts.cwd});
+    //   this.register(app.alias, app, app.fn);
+    //   return this;
+    // });
+
+    // this.define('resolveModule', function(filename, options) {
+    //   return new Config(filename, extend({}, config, options));
+    // });
   };
 
 
   function Config(filename, opts) {
-    var filepath = path.resolve(opts.cwd, filename);
-    var basename = path.basename(path.dirname(filepath));
-    console.log(basename)
-    this.appname = utils.project(opts.cwd);
+    this.configfile = path.resolve(opts.cwd, filename);
+
+    var basename = path.basename(opts.cwd);
+    this.appname = opts.appname || utils.project(opts.cwd);
     this.alias = utils.renameFn(basename, opts);
     this.Ctor = resolver.resolveModule(config.parent, opts);
 
     this.path = opts.cwd;
-    this.fn = opts.fn;
+    this.fn = opts.fn || require(this.configfile);
 
-    if (typeof this.fn !== 'function') {
-      this.fn = require(filepath);
-    }
-
-    this.inspect = function() {
-      return {
-        appname: this.appname,
-        alias: this.alias,
-        path: this.path,
-        fn: this.fn
-      }
-    };
+    // this.inspect = function() {
+    //   return {
+    //     appname: this.appname,
+    //     alias: this.alias,
+    //     path: this.path,
+    //     fn: this.fn
+    //   }
+    // };
   }
 };
 

@@ -43,6 +43,5 @@ module.exports = function(options) {
         return cb(null, args);
       });
     });
-
   };
 };

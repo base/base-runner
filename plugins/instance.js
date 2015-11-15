@@ -34,8 +34,6 @@ module.exports = function instance(options) {
       } catch (err) {
         console.log(err);
       }
-
-
       // this[this.runner.plural][name] = child;
       return child;
     });

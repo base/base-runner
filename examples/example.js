@@ -20,13 +20,21 @@ var runner = new Runner(argv);
 //   cwd: 'examples/apps'
 // });
 // console.timeEnd('runner');
-runner.on('register', function() {
-  console.log(arguments)
-})
+// runner.on('register', function() {
+//   // console.log(arguments)
+// });
 
-runner.register('generate.js', 'generate-*', {
+// runner.on('resolve', function(filepath) {
+
+// });
+
+runner.resolve('generate-*/generate.js', {
   cwd: 'examples/apps'
 });
+
+// runner.register('generate.js', 'generate-*', {
+//   cwd: 'examples/apps'
+// });
 
 runner.register('generate-aaa', function (app, base, env) {
   // console.log(arguments)
