@@ -28,43 +28,42 @@ Base.prototype.generator = function(name, options) {
 
   this.emit('register', name, inst);
   this.generators[name] = inst;
-  return this.generators[name];
+  return inst;
 };
+
 Base.prototype.resolve = function(patterns, opts) {
   var files = resolveUp(patterns, opts).concat(glob.sync(patterns, opts));
   return unique(files);
 };
+
 Base.prototype.register = function(name, options, fn) {
   if (!fn && utils.isObject(options) && options.fn) {
     this.generator(name, options);
     return this;
   }
-  // this scenario is not handled yet
+  var config = new Config(name, options);
+  this.apps = this.apps || {};
+  this.apps[config.alias] = config;
+  this.generator(config.alias, config);
+  return this;
 };
 
-Base.prototype.registerGlob = function(patterns, opts) {
+Base.prototype.registerUp = function(patterns, opts) {
   var dirs = this.resolve(patterns, opts);
-  this.apps = this.apps || {};
   var len = dirs.length, i = -1;
 
   while (++i < len) {
-    var config = new Config(dirs[i], opts);
-    this.apps[config.alias] = config;
-    this.register(config.alias, config);
+    this.register(dirs[i], opts);
   }
   return this;
 };
 
 Base.prototype.registerLocal = function(patterns, opts) {
-  this.apps = this.apps || {};
-
   var dirs = utils.glob.sync(patterns, opts);
   var len = dirs.length, i = -1;
 
   while (++i < len) {
-    var config = new Config(dirs[i], opts);
-    this.apps[config.alias] = config;
-    this.register(config.alias, config);
+    this.register(dirs[i], opts);
   }
   return this;
 };
@@ -81,7 +80,7 @@ function Runner(options) {
   this.use(env());
 
   this.base.on('register', function(name, inst) {
-    inst.fn.call(inst, inst, this.base, this.env);
+    inst.fn.call(inst, inst, this.base, this);
   }.bind(this));
 }
 Base.extend(Runner);
@@ -95,8 +94,8 @@ Runner.prototype.register = function(name, options, fn) {
   return this;
 };
 
-Runner.prototype.registerGlob = function(patterns, opts) {
-  this.base.registerGlob.apply(this.base, arguments);
+Runner.prototype.registerUp = function(patterns, opts) {
+  this.base.registerUp.apply(this.base, arguments);
   return this;
 };
 
@@ -121,7 +120,6 @@ Runner.prototype.build = function(name, cb) {
 
 Runner.prototype.runTasks = function(apps, cb) {
   utils.async.eachOf(apps, function(tasks, name, next) {
-    console.log(name)
     var generator = this.base.generator(name);
     this.emit('run', name, generator);
     generator.build(tasks, next);
@@ -130,6 +128,7 @@ Runner.prototype.runTasks = function(apps, cb) {
 };
 
 function Config(fp, opts) {
+  opts = opts || {};
   this.options = opts;
   this.configfile = fp;
   this.dir = path.dirname(fp);
@@ -155,7 +154,7 @@ function resolveModule(cwd, name, options) {
 
 var runner = new Runner();
 
-runner.registerGlob('generate-*/generate.js', {
+runner.registerUp('generate-*/generate.js', {
   paths: ['examples/apps'],
   realpath: true,
   Ctor: Base,
@@ -165,7 +164,7 @@ runner.registerGlob('generate-*/generate.js', {
   }
 });
 
-runner.build('foo:b', function(err) {
+runner.build('foo:q', function(err) {
   if (err) return console.log(err);
   console.log('done!');
 });
