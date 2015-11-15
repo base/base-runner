@@ -29,7 +29,12 @@ module.exports = function instance(options) {
 
       child.define('runner', this.runner);
 
-      fn.call(this.runner, child, this, this.runner);
+      try {
+        fn.call(this.runner, child, this, this.runner);
+      } catch (err) {
+        console.log(err);
+      }
+
       this[this.runner.plural][name] = child;
       return child;
     });

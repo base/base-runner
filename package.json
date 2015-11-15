@@ -18,26 +18,38 @@
     "test": "mocha"
   },
   "dependencies": {
+    "array-unique": "^0.2.1",
     "async": "^1.5.0",
-    "base-methods": "^0.4.0",
+    "base-cli": "^0.2.1",
+    "base-methods": "^0.4.1",
+    "base-options": "^0.5.4",
+    "base-plugins": "^0.4.1",
+    "base-store": "^0.2.0",
+    "camelcase": "^1.2.1",
+    "composer": "^0.6.0",
+    "define-property": "^0.2.5",
     "expand-args": "^0.3.0",
     "export-files": "^2.1.0",
     "extend-shallow": "^2.0.1",
+    "get-value": "^2.0.0",
     "inflection": "^1.7.2",
     "lazy-cache": "^0.2.4",
+    "matched": "^0.3.2",
+    "micromatch": "^2.3.2",
     "minimist": "^1.2.0",
-    "object.omit": "^2.0.0"
+    "mocha": "^2.3.3",
+    "object.omit": "^2.0.0",
+    "project-name": "^0.2.1",
+    "resolve-dir": "^0.1.0",
+    "resolve-up": "^0.4.0",
+    "set-value": "^0.3.1",
+    "time-require": "^0.1.2",
+    "union-value": "^0.2.1",
+    "use": "^1.1.2"
   },
   "devDependencies": {
-    "base-cli": "^0.2.1",
-    "base-options": "^0.5.4",
-    "base-plugins": "^0.4.1",
-    "get-value": "^2.0.0",
-    "mocha": "^2.3.3"
-  },
-  "verb": {
-    "related": {
-      "list": []
-    }
+    "assemble-ask": "^0.1.4",
+    "assemble-core": "^0.1.11",
+    "time-require": "github:jonschlinkert/time-require"
   }
 }

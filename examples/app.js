@@ -1,8 +1,10 @@
 
-var Base = require('base-methods');
+var cli = require('base-cli');
+var ask = require('assemble-ask');
+var Base = require('assemble-core');
 var option = require('base-options');
 var plugins = require('base-plugins');
-var cli = require('base-cli');
+var Composer = require('composer');
 var plugin = require('../plugins');
 
 function Generate(options) {
@@ -11,14 +13,18 @@ function Generate(options) {
   }
 
   Base.call(this);
+  // Composer.call(this, 'generate');
   this.options = options || {};
 
   if (!this.options.path) {
     this.options.path = __dirname;
   }
 
+  this.handler('onStream');
+
   this.use(option());
   this.use(plugins());
+  this.use(ask());
   this.use(cli());
   this.use(plugin.getFile({
     path: this.options.path
@@ -32,10 +38,11 @@ function Generate(options) {
 }
 
 /**
- * Inherit `Generate`
+ * Inherit `Generate` and `Composer`
  */
 
 Base.extend(Generate);
+// Base.inherit(Generate, Composer);
 
 /**
  * Expose Generate

@@ -13,6 +13,7 @@ var expand = require('expand-args');
 var plugin = require('./plugins');
 var utils = require('./lib/utils');
 
+
 module.exports = function (Ctor, config) {
   if (typeof Ctor !== 'function') {
     config = Ctor;
@@ -20,9 +21,11 @@ module.exports = function (Ctor, config) {
   }
 
   config = createConfig(config);
+
   var method = config.method;
   var single = config.single;
   var plural = config.plural;
+  var parent = config.parent;
 
   function Runner(argv, options) {
     if (!(this instanceof Runner)) {
@@ -30,26 +33,31 @@ module.exports = function (Ctor, config) {
     }
 
     Base.call(this);
-    this.options = options || {};
     this.use(option());
 
-    this.option('rename', config.rename);
-    this.define('single', single);
-    this.define('plural', plural);
-    var opts = { single: single, plural: plural };
+    this.options = utils.extend({}, config, options);
+    var opts = this.options;
 
-    this.use(plugin.register(opts));
-    this.use(plugin.list(opts));
-    this.use(plugin.run(opts));
-    this.use(plugin.argv(opts))
-    this.use(plugin.listeners(opts));
+    this.option('rename', opts.rename);
+    this.define('single', opts.single);
+    this.define('plural', opts.plural);
+    this.define('parent', opts.parent || 'runner');
+    this.define('_argv', argv);
+
+    this.use(plugin.register(opts))
+      .use(plugin.list(opts))
+      .use(plugin.run(opts))
+      .use(plugin.argv(opts))
+      .use(plugin.listeners(opts));
 
     this.base = new Ctor();
     this.base.define('runner', this);
-    this.base.define(plural, {});
+    this.base.set(plural, {});
 
-    // this.baseMiddleware(require('./middleware'))
-    // this.baseTasks(require('./tasks'))
+
+    this[plural] = this.base[plural];
+    // this.defaultMiddleware(require('./middleware'))
+    // this.defaultTasks(require('./tasks'))
   }
 
   /**
@@ -58,12 +66,16 @@ module.exports = function (Ctor, config) {
 
   Base.extend(Runner);
 
+  Runner.prototype[single] = function(name) {
+    return this.get([plural, name]);
+  };
+
   /**
    * Register base middleware. These are middleware functions
    * that are probably in a local directory, like `lib/middleware`
    */
 
-  Runner.prototype.baseMiddleware = function(fns) {
+  Runner.prototype.defaultMiddleware = function(fns) {
     for (var fn in fns) {
       fns[fn](this.base, this.base, this);
     }
@@ -74,7 +86,7 @@ module.exports = function (Ctor, config) {
    * that are probably in a local directory, like `lib/tasks`
    */
 
-  Runner.prototype.baseTasks = function(tasks) {
+  Runner.prototype.defaultTasks = function(tasks) {
     for (var key in tasks) {
       this.base.task(key, tasks[key](this.base, this.base, this));
     }
@@ -95,35 +107,31 @@ module.exports = function (Ctor, config) {
   };
 
   Runner.prototype.getApp = function(name) {
-    return this[plural][name];
+    return get(this.base, [plural, name]);
   };
 
-  Runner.prototype.matchFile = function(name) {};
-  Runner.prototype.getView = function(runner, name) {
-    return this.getApp(runner).getView(name);
-  };
+  // Runner.prototype.matchFile = function(name) {};
+  // Runner.prototype.getView = function(runner, name) {
+  //   return this.getApp(runner).getView(name);
+  // };
 
-  Runner.prototype.hasFile = function(name) {};
-  Runner.prototype.lookup = function(name) {};
-  Runner.prototype.rename = function(name) {};
-  Runner.prototype.copy = function(name) {};
+  // Runner.prototype.hasFile = function(name) {};
+  // Runner.prototype.lookup = function(name) {};
+  // Runner.prototype.rename = function(name) {};
+  // Runner.prototype.copy = function(name) {};
 
-  Runner.prototype[single] = function(name) {
-    return this.base[single](name);
-  };
+  // Runner.prototype.build = function() {
+  //   this.base.build.apply(this.base, arguments);
+  //   return this;
+  // };
 
-  Runner.prototype.build = function() {
-    this.base.build.apply(this.base, arguments);
-    return this;
-  };
+  // Runner.prototype.hasGenerator = function(name) {
+  //   return this[plural].hasOwnProperty(name);
+  // };
 
-  Runner.prototype.hasGenerator = function(name) {
-    return this[plural].hasOwnProperty(name);
-  };
-
-  Runner.prototype.hasTask = function(name) {
-    return this.taskMap.indexOf(name) > -1;
-  };
+  // Runner.prototype.hasTask = function(name) {
+  //   return this.taskMap.indexOf(name) > -1;
+  // };
 
   /**
    * Expose `Runner`

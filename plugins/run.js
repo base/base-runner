@@ -11,9 +11,9 @@ module.exports = function(options) {
   var plural = options.plural;
   var single = options.single;
 
-  return function(app) {
+  return function(runner) {
 
-    app.define('run', function(args, cb) {
+    runner.define('run', function(args, cb) {
       if (typeof args === 'function') {
         cb = args;
         args = null;
