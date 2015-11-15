@@ -13,17 +13,17 @@ module.exports = function instance(options) {
   var subname = opts.subname;
 
   return function (app) {
-    app.define(opts.method, function(name, opts, fn) {
+    app.define(method, function(name, opts, fn) {
       if (typeof opts === 'function') {
         fn = opts;
         opts = {};
       }
       opts = opts || {};
 
-      var nickname = utils.renameFn(name, this.options);
+      var alias = utils.renameFn(name, this.options);
       var Ctor = opts.Ctor || this.constructor;
       var child = new Ctor()
-        .option('nickname', nickname)
+        .option('alias', alias)
         .option('appname', opts.appname || name)
         .option('path', opts.path || './');
 
@@ -35,7 +35,8 @@ module.exports = function instance(options) {
         console.log(err);
       }
 
-      this[this.runner.plural][name] = child;
+
+      // this[this.runner.plural][name] = child;
       return child;
     });
 

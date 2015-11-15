@@ -2,7 +2,7 @@
 
 // require('time-require');
 var argv = require('minimist')(process.argv.slice(2));
-var Generate = require('./app');
+var Generate = require('./generate');
 var create = require('../');
 
 var Runner = create(Generate, {
@@ -20,6 +20,9 @@ var runner = new Runner(argv);
 //   cwd: 'examples/apps'
 // });
 // console.timeEnd('runner');
+runner.on('register', function() {
+  console.log(arguments)
+})
 
 runner.register('generate.js', 'generate-*', {
   cwd: 'examples/apps'
@@ -34,7 +37,7 @@ runner.register('generate-bbb', function (app, base, env) {
 });
 
 runner.register('ccc', function (app, base, env) {
-  // console.log(base.generators)
+  console.log(base.generators)
 });
 
 

@@ -2,6 +2,7 @@
 
 var path = require('path');
 var extend = require('extend-shallow');
+var Generator = require('../lib/generator');
 var Resolver = require('./resolver');
 var utils = require('../lib/utils');
 
@@ -35,8 +36,8 @@ module.exports = function(config) {
       var opts = extend({cwd: ''}, config, options);
       if (typeof fn === 'function') {
         opts.fn = fn;
-        var cfg = new Config(name, opts);
-        console.log(name)
+        var cfg = new Generator(name, opts);
+        // console.log(cfg)
       }
 
       this.base[single](name, opts, fn);
@@ -58,7 +59,7 @@ module.exports = function(config) {
     this.define('registerModule', function(filename, options) {
       var opts = extend({}, config, options);
       var app = this.resolveModule(filename, {cwd: opts.cwd});
-      this.register(app.nickname, app, app.fn);
+      this.register(app.alias, app, app.fn);
       return this;
     });
 
@@ -73,7 +74,7 @@ module.exports = function(config) {
     var basename = path.basename(path.dirname(filepath));
     console.log(basename)
     this.appname = utils.project(opts.cwd);
-    this.nickname = utils.renameFn(basename, opts);
+    this.alias = utils.renameFn(basename, opts);
     this.Ctor = resolver.resolveModule(config.parent, opts);
 
     this.path = opts.cwd;
@@ -86,7 +87,7 @@ module.exports = function(config) {
     this.inspect = function() {
       return {
         appname: this.appname,
-        nickname: this.nickname,
+        alias: this.alias,
         path: this.path,
         fn: this.fn
       }

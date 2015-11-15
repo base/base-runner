@@ -22,9 +22,9 @@ module.exports = function (Ctor, config) {
 
   config = createConfig(config);
 
-  var method = config.method;
   var single = config.single;
   var plural = config.plural;
+  var method = config.method || single;
   var parent = config.parent;
 
   function Runner(argv, options) {
@@ -145,11 +145,11 @@ function createConfig(config) {
     throw new TypeError('base-runner expected an options object');
   }
 
-  config = utils.extend({method: ''}, config);
-  if (!config.single) {
+  config = utils.extend({}, config);
+  if (!config.single && config.method) {
     config.single = utils.single(config.method);
   }
-  if (!config.plural) {
+  if (!config.plural && config.method) {
     config.plural = utils.plural(config.method);
   }
 
