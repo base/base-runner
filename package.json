@@ -37,7 +37,6 @@
     "lazy-cache": "^0.2.4",
     "matched": "^0.3.2",
     "minimist": "^1.2.0",
-    "mocha": "^2.3.3",
     "object.omit": "^2.0.0",
     "project-name": "^0.2.1",
     "resolve-dir": "^0.1.0",
@@ -48,6 +47,16 @@
   },
   "devDependencies": {
     "assemble-ask": "^0.1.4",
-    "assemble-core": "^0.1.11"
+    "assemble-core": "^0.1.11",
+    "mocha": "*"
+  },
+  "keywords": [
+    "base",
+    "runner"
+  ],
+  "verb": {
+    "related": {
+      "list": []
+    }
   }
 }

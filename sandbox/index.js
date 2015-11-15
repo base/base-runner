@@ -6,7 +6,8 @@ var glob = require('matched');
 var async = require('async');
 var unique = require('array-unique');
 var option = require('base-options');
-var Base = require('assemble-core');
+var Base = require('base-methods');
+var Assemble = require('assemble-core');
 var ask = require('assemble-ask');
 var resolveUp = require('resolve-up');
 var utils = require('../lib/utils');
@@ -17,9 +18,10 @@ Base.prototype.generator = function(name, options) {
   if (typeof name === 'string' && arguments.length === 1) {
     return this.generators[name];
   }
+
   this.generators = this.generators || {};
   var opts = utils.extend({}, options);
-  var inst = new Base(opts.options)
+  var inst = new Assemble(opts.options)
     .set(opts)
     .use(ask())
     .use(function(app) {
@@ -73,10 +75,9 @@ function Runner(options) {
   Base.call(this);
   this.options = options || {};
   this.apps = {};
-  this.Base = Base;
+  this.Base = this.options.Base || Base;
   this.base = new this.Base();
   this.use(option());
-  this.use(ask());
   this.use(env());
 
   this.base.on('register', function(name, inst) {
@@ -157,7 +158,7 @@ var runner = new Runner();
 runner.registerUp('generate-*/generate.js', {
   paths: ['examples/apps'],
   realpath: true,
-  Ctor: Base,
+  Base: Assemble,
   cwd: '',
   filter: function(fp) {
     return true;
