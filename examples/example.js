@@ -14,11 +14,12 @@ var Runner = create(Generate, {
   }
 });
 
-var runner = new Runner(argv);
+// var runner = new Runner(argv);
 // console.time('runner');
 // runner.resolve(['generate-*/generate.js'], {
-//   cwd: 'examples/apps'
+//   cwd: '@/'
 // });
+// console.log(runner)
 // console.timeEnd('runner');
 // runner.on('register', function() {
 //   // console.log(arguments)
@@ -28,25 +29,32 @@ var runner = new Runner(argv);
 
 // });
 
-runner.resolve('generate-*/generate.js', {
-  cwd: 'examples/apps'
-});
+// runner.resolve('generate-*/generate.js', {
+//   cwd: 'examples/apps'
+// });
+
+// runner.register(['generate-*/generate.js'], {
+//   paths: ['examples/app'],
+//   filter: function(fp) {
+//     return true;
+//   }
+// });
 
 // runner.register('generate.js', 'generate-*', {
 //   cwd: 'examples/apps'
 // });
 
-runner.register('generate-aaa', function (app, base, env) {
-  // console.log(arguments)
-});
+// runner.register('generate-aaa', function (app, base, env) {
+//   // console.log(arguments)
+// });
 
-runner.register('generate-bbb', function (app, base, env) {
-  // console.log(arguments)
-});
+// runner.register('generate-bbb', function (app, base, env) {
+//   // console.log(arguments)
+// });
 
-runner.register('ccc', function (app, base, env) {
-  console.log(base.generators)
-});
+// runner.register('ccc', function (app, base, env) {
+//   console.log(base.generators)
+// });
 
 
 // console.log(runner.generators)
