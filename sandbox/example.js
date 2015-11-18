@@ -4,14 +4,14 @@ var Assemble = require('assemble-core');
 var Runner = require('./');
 var runner = new Runner();
 
-runner.registerUp('generate-*/generate.js', {
+runner.register(['generate-*/generate.js'], {
   paths: ['examples/apps'],
   realpath: true,
   Base: Assemble,
-  cwd: '',
-  filter: function(fp) {
-    return true;
-  }
+  // cwd: '',
+  // filter: function(fp) {
+  //   return true;
+  // }
 });
 
 // runner.base.task('a', function() {

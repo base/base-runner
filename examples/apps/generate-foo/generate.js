@@ -3,8 +3,10 @@
 var path = require('path');
 
 module.exports = function (app, base, env) {
+  // console.log(base)
   var fp = path.resolve(__dirname, '../update-qux/updatefile.js');
-  env.register(fp);
+  // env.register(fp);
+
 
   app.task('default', function() {
     return app.src('package.json')

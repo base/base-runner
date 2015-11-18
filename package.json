@@ -19,6 +19,7 @@
     "test": "mocha"
   },
   "dependencies": {
+    "ansi-red": "^0.1.1",
     "array-unique": "^0.2.1",
     "async": "^1.5.0",
     "base-cli": "^0.2.1",
@@ -30,9 +31,11 @@
     "composer": "^0.6.0",
     "define-property": "^0.2.5",
     "expand-args": "^0.3.0",
+    "expand-object": "^0.4.0",
     "export-files": "^2.1.0",
     "extend-shallow": "^2.0.1",
     "get-value": "^2.0.0",
+    "has-glob": "^0.1.1",
     "inflection": "^1.7.2",
     "isobject": "^2.0.0",
     "lazy-cache": "^0.2.4",
@@ -49,6 +52,10 @@
   "devDependencies": {
     "assemble-ask": "^0.1.4",
     "assemble-core": "^0.1.11",
+    "gulp": "^3.9.0",
+    "gulp-eslint": "^1.1.0",
+    "gulp-istanbul": "^0.10.2",
+    "gulp-mocha": "^2.2.0",
     "mocha": "*"
   },
   "keywords": [

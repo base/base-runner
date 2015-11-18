@@ -6,6 +6,10 @@ var Base = require('base-methods');
 var utils = require('../lib/utils');
 var env = require('../lib/env');
 
+function generator(app, base, env) {
+
+}
+
 function Runner(options) {
   Base.call(this);
   this.options = options || {};
