@@ -1,11 +1,12 @@
 'use strict';
 
 var path = require('path');
-var assert = require('assert');
 var red = require('ansi-red');
+var assert = require('assert');
 var Base = require('assemble-core');
-var utils = require('../lib/utils');
+var runtimes = require('composer-runtimes');
 var toTasks = require('../lib/to-tasks');
+var utils = require('../lib/utils');
 var env = require('../lib/env');
 var proto = Base.prototype;
 
@@ -26,6 +27,8 @@ function Generate(options, parent, fn) {
   this.isGenerator = false;
   this.define('parent', null);
   Base.call(this);
+
+  this.use(runtimes());
 
   this.validate();
 
@@ -184,6 +187,18 @@ Generate.prototype.runTasks = function(tasks, cb) {
   return this;
 };
 
+function isSimpleTask(tasks) {
+  tasks = utils.arrayify(tasks);
+  var len = tasks.length;
+  while(len--) {
+    if (typeof tasks[len] !== 'string' || /\W/.test(tasks[len])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+
 Generate.prototype.build = function(tasks, cb) {
   if (typeof tasks === 'string' && /\W/.test(tasks)) {
     return this.runTasks.apply(this, arguments);
@@ -192,6 +207,10 @@ Generate.prototype.build = function(tasks, cb) {
     return this.runTasks.apply(this, arguments);
   }
   if (Array.isArray(tasks)) {
+    if (isSimpleTask(tasks)) {
+      proto.build.call(this, tasks, cb);
+      return this;
+    }
     utils.async.each(tasks, function(task, next) {
       this.build(task, next);
     }.bind(this), cb);
