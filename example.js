@@ -1,7 +1,7 @@
 'use strict';
 
 var Base = require('assemble-core');
-// var Runner = require('./sandbox/generate');
+var generator = require('./lib/generator');
 var utils = require('./lib/utils');
 
 function Generate() {
@@ -11,24 +11,36 @@ function Generate() {
 }
 Base.extend(Generate);
 
-function Generator(name, options, parent, fn) {
-  this.alias = utils.alias(name, options);
-  if (this.alias === '.') {
-    this.alias = utils.project(process.cwd());
-  }
-  this.name = name;
-  this.isGenerator = true;
-  Generate.call(this, options, parent, fn);
-}
-Generate.extend(Generator);
+// function generator(Runner) {
+//   function Generator(name, options, parent, fn) {
+//     Runner.call(this, options, parent, fn);
+//     this.name = name;
+//     this.isGenerator = true;
+//     this.alias = utils.alias(name, options);
+//     if (this.alias === '.') {
+//       this.alias = utils.project(process.cwd());
+//     }
+//   }
+//   Runner.extend(Generator);
+//   return Generator;
+// }
 
-
-var runner = require('./sandbox/runner');
-var Runner = runner(Generate, Generator, {
+var create = require('./');
+var Runner = create(Generate, generator, {
   child: 'Generator',
   parent: 'Generate',
   method: 'generator',
-  cache: 'generators'
+  storageName: 'generators',
+  configfile: 'appfile.js',
+  initFn: function () {
+    this.isGenerate = true;
+    this.isGenerator = false;
+  },
+  inspectFn: function (obj) {
+    obj.isGenerate = this.isGenerate;
+    obj.isGenerator = this.isGenerator;
+    obj.generators = this.generators;
+  },
 });
 
 var app = new Runner();
@@ -51,7 +63,6 @@ app.resolve('examples/apps/*/generate.js', {
 app.resolve('generate.js', {
   resolveLocal: true
 });
-
 
 app.on('error', function(err) {
   console.log(err);
@@ -129,11 +140,11 @@ app.register('one', function(one, base, env) {
 //   console.log();
 // });
 
-// app.build(['base:foo,baz', 'foo', 'baz'], function(err) {
-//   if (err) return console.log(err)
-//   console.log('done!');
-//   console.log();
-// });
+app.build(['base:foo,baz', 'foo', 'baz'], function(err) {
+  if (err) return console.log(err)
+  console.log('done!');
+  console.log();
+});
 
 // app.build(['foo', 'baz'], function(err) {
 //   if (err) return console.log(err)
@@ -141,11 +152,11 @@ app.register('one', function(one, base, env) {
 //   console.log();
 // });
 
-app.build('one:x', function(err) {
-  if (err) return console.log(err)
-  console.log('done!');
-  console.log();
-});
+// app.build('one:x', function(err) {
+//   if (err) return console.log(err)
+//   console.log('done!');
+//   console.log();
+// });
 
 /**
  * Nested

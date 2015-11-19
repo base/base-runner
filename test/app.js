@@ -3,6 +3,7 @@
 require('mocha');
 var assert = require('assert');
 var Base = require('base-methods');
+var App = require('../lib/generator');
 var create = require('..');
 var Runner;
 var runner;

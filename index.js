@@ -1,161 +1,416 @@
-/*!
- * base-runner <https://github.com/jonschlinkert/base-runner>
- *
- * Copyright (c) 2015, Jon Schlinkert.
- * Licensed under the MIT License.
- */
-
 'use strict';
 
-var Base = require('base-methods');
-var option = require('base-options');
-var expand = require('expand-args');
-var plugin = require('./plugins');
+var path = require('path');
+var red = require('ansi-red');
+var assert = require('assert');
+var runtimes = require('composer-runtimes');
+var toTasks = require('./lib/to-tasks');
 var utils = require('./lib/utils');
+var env = require('./lib/env');
 
-
-module.exports = function (Ctor, config) {
-  if (typeof Ctor !== 'function') {
-    config = Ctor;
-    Ctor = Base;
+function runner(Base, child, config) {
+  if (utils.isObject(Base)) {
+    child = Base;
+    Base = require('base-methods');
+    config = {};
   }
 
-  config = createConfig(config);
+  config = config || {};
+  var proto = Base.prototype;
+  var method = config.method || 'app';
+  var storageName = config.storageName || 'apps';
 
-  var single = config.single;
-  var plural = config.plural;
-  var method = config.method || single;
-  var parent = config.parent;
+  /**
+   * Create an instance of Runner with the given options.
+   *
+   * @param {Object} `options`
+   * @param {Object} `parent`
+   * @param {Function} `fn`
+   */
 
-  function Runner(argv, options) {
+  function Runner(options, parent, fn) {
+    if (typeof options === 'function') {
+      return new Runner(null, null, options);
+    }
+
+    if (typeof parent === 'function') {
+      return new Runner(options, null, parent);
+    }
+
     if (!(this instanceof Runner)) {
-      return new Runner(argv, options);
+      return new Runner(options, parent, fn);
     }
 
     Base.call(this);
-    this.use(option());
+    this.use(runtimes());
+    this.validate();
 
-    this.options = utils.extend({}, config, options);
-    var opts = this.options;
+    if (typeof config.initFn === 'function') {
+      config.initFn.call(this, this);
+    }
 
-    this.option('rename', opts.rename);
-    this.define('single', opts.single);
-    this.define('plural', opts.plural);
-    this.define('parent', opts.parent || 'runner');
-    this.define('_argv', argv);
+    this[storageName] = {};
+    if (!this.name) {
+      this.name = this.options.name || 'root';
+    }
 
-    this.use(plugin.register(opts))
-      .use(plugin.list(opts))
-      .use(plugin.run(opts))
-      .use(plugin.argv(opts))
-      .use(plugin.listeners(opts));
+    this.options = options || {};
+    this.define('parent', null);
+    this.env = {};
 
-    this.base = new Ctor();
-    this.base.define('runner', this);
-    this.base.set(plural, {});
+    if (parent) {
+      this.parent = parent;
+    } else {
+      this.initEnv();
+    }
 
-
-    this[plural] = this.base[plural];
-    // this.defaultMiddleware(require('./middleware'))
-    // this.defaultTasks(require('./tasks'))
+    if (typeof fn === 'function') {
+      this.invoke(fn);
+    }
   }
 
   /**
-   * Inherit `Base`
+   * Inherit Base
    */
 
   Base.extend(Runner);
 
-  Runner.prototype[single] = function(name) {
-    return this.get([plural, name]);
+  /**
+   * Create a new App
+   */
+
+  var App = child(Runner, config);
+
+  /**
+   * Validate arguments passed to `Runner`
+   */
+
+  Runner.prototype.validate = function() {
+    // assert(!'set' in this, red('app should not have `set`'));
   };
 
   /**
-   * Register base middleware. These are middleware functions
-   * that are probably in a local directory, like `lib/middleware`
+   * Create the `base` runner instance, along with any defaults,.
    */
 
-  Runner.prototype.defaultMiddleware = function(fns) {
-    for (var fn in fns) {
-      fns[fn](this.base, this.base, this);
-    }
+  Runner.prototype.initEnv = function() {
+    this.use(env());
+    this.loadMiddleware({});
+    this.loadTasks({});
   };
 
   /**
-   * Register base tasks These are task functions
-   * that are probably in a local directory, like `lib/tasks`
+   * Load an object of middleware functions.
    */
 
-  Runner.prototype.defaultTasks = function(tasks) {
+  Runner.prototype.loadMiddleware = function(fns) {
+    for (var fn in fns) this.invoke(fns[fn]);
+  };
+
+  /**
+   * Load an object of tasks.
+   */
+
+  Runner.prototype.loadTasks = function(tasks) {
     for (var key in tasks) {
-      this.base.task(key, tasks[key](this.base, this.base, this));
+      this.task(key, this.invoke(tasks[key]));
     }
   };
 
-  // Templates.prototype.create = function(name) {
-  //   var collection = this.collection(name);
-  //   this.views[name] = collection.views;
-  //   this[name] = collection;
+  /**
+   * Call the given `fn` in the context if the current instance,
+   * passing the instance, the `base` instance, and `env` as
+   * arguments to `fn`.
+   *
+   * @param {Function} `fn`
+   * @return {Object} Returns the instance, for chaining.
+   */
 
-  //   return this[name];
-  // };
+  Runner.prototype.invoke = function(fn) {
+    fn.call(this, this, this.base, this.env);
+    return this;
+  };
 
-  Runner.prototype.getMethod = function(method) {
-    return function (name) {
-      return this[plural][name];
-    };
+  /**
+   * Add a leaf to the task-runner tree.
+   *
+   * @param {String} `name`
+   * @param {Array} `tasks`
+   */
+
+  Runner.prototype.leaf = function(name, tasks) {
+    this.tree = this.tree || {};
+    this.tree[name] = Object.keys(tasks);
+  };
+
+  /**
+   * Proxy to the `register` method for getting or setting
+   * an `app` on the instance (for example, generators and
+   * updaters are apps).
+   *
+   * @param {String} `name`
+   * @param {Object} `options`
+   * @param {Function} `fn`
+   * @return {Object} Returns an app.
+   */
+
+  Runner.prototype[method] = function(name, options, fn) {
+    if (arguments.length === 1 && typeof name === 'string') {
+      return this.getApp.apply(this, arguments);
+    }
+    return this.register.apply(this, arguments);
   };
 
   Runner.prototype.getApp = function(name) {
-    return get(this.base, [plural, name]);
+    if (name === 'base') return this;
+    name = name.split('.').join('.' + storageName + '.');
+    var res = utils.get(this[storageName], name);
+    if (typeof res === 'undefined') {
+      throw new Error('Runner cannot resolve ' + name);
+    }
+    return res;
   };
 
-  // Runner.prototype.matchFile = function(name) {};
-  // Runner.prototype.getView = function(runner, name) {
-  //   return this.getApp(runner).getView(name);
-  // };
+  /**
+   * Get or set na `app` on the instance. Generators and updaters
+   * are examples of "apps".
+   *
+   * @param {String} `name`
+   * @param {Object} `options`
+   * @param {Function} `fn`
+   * @return {Object} Returns an app.
+   */
 
-  // Runner.prototype.hasFile = function(name) {};
-  // Runner.prototype.lookup = function(name) {};
-  // Runner.prototype.rename = function(name) {};
-  // Runner.prototype.copy = function(name) {};
+  Runner.prototype.register = function(name, options, fn) {
+    if (typeof options === 'function') {
+      return this.register(name, {}, options);
+    }
+    var app = new App(name, options, this, fn);
+    var alias = app.alias;
+    var tasks = app.tasks;
 
-  // Runner.prototype.build = function() {
-  //   this.base.build.apply(this.base, arguments);
-  //   return this;
-  // };
+    console.log(app)
 
-  // Runner.prototype.hasGenerator = function(name) {
-  //   return this[plural].hasOwnProperty(name);
-  // };
+    this.emit('register', alias, app);
+    this.leaf(alias, tasks);
 
-  // Runner.prototype.hasTask = function(name) {
-  //   return this.taskMap.indexOf(name) > -1;
+    this[storageName][alias] = app;
+    return app;
+  };
+
+  /**
+   * Resolve apps from one or more glob patterns, file paths,
+   * or explicitly defined name with an "app" function.
+   *
+   * @param {String} `name`
+   * @param {Object} `options`
+   * @param {Function} `fn`
+   * @return {Object} Returns an app.
+   */
+
+  Runner.prototype.resolve = function(name, options, fn) {
+    if (utils.hasGlob(name)) {
+      utils.resolve(name, options).forEach(function(fp) {
+        try {
+          this.register(fp, options, require(fp));
+        } catch (err) {
+          this.emit('error', err);
+        }
+      }.bind(this));
+      return this;
+    }
+    if (!fn && utils.isObject(options) && options.isGenerate) {
+      this.register(name, options);
+      return this;
+    }
+    return this.register.apply(this, arguments);
+  };
+
+  /**
+   * Run the given applications and their `tasks`. The given
+   * `callback` function will be called when the tasks are complete.
+   *
+   * ```js
+   * generators: {
+   *   foo: ['one', 'two'], // tasks
+   *   bar: ['three']
+   * }
+   * ```
+   * @param {String|Array|Object} `tasks`
+   * @param {Function} cb
+   * @return {Object} returns the instance for chaining
+   */
+
+  Runner.prototype.runTasks = function(tasks, cb) {
+    if (!utils.isObject(tasks)) {
+      tasks = toTasks(tasks);
+    }
+
+    if (Array.isArray(tasks)) {
+      utils.async.each(tasks, function(task, next) {
+        this.build(task, next);
+      }.bind(this), cb);
+      return this;
+    }
+
+    utils.async.eachOf(tasks, function(list, name, next) {
+      var app = this[method](name);
+      this.emit('runTasks', name, app);
+      app.build(list, next);
+    }.bind(this), cb);
+    return this;
+  };
+
+  Runner.prototype.build = function(tasks, cb) {
+    if (typeof tasks === 'string' && /\W/.test(tasks)) {
+      return this.runTasks.apply(this, arguments);
+    }
+    if (utils.isObject(tasks)) {
+      return this.runTasks.apply(this, arguments);
+    }
+    if (Array.isArray(tasks)) {
+      if (utils.isSimpleTask(tasks)) {
+        proto.build.call(this, tasks, cb);
+        return this;
+      }
+      utils.async.each(tasks, function(task, next) {
+        this.build(task, next);
+      }.bind(this), cb);
+      return this;
+    }
+    this.emit('build', tasks);
+    proto.build.call(this, tasks, cb);
+  };
+
+  /**
+   * Custom `inspect` method.
+   */
+
+  // Runner.prototype.inspect = function() {
+  //   var obj = {
+  //     name: this.name,
+  //     path: this.path,
+  //     env: this.env,
+  //     options: this.options,
+  //   };
+
+  //   if (typeof config.inspectFn === 'function') {
+  //     config.inspectFn.call(this, obj, this);
+  //   }
+
+  //   obj.tasks = Object.keys(this.tasks);
+  //   if (this.tree) {
+  //     obj.tree = this.tree;
+  //   }
+  //   return obj;
+
+  //   // var tasks = Object.keys(this.tasks).join(', ') || 'none';
+  //   // return '<App "' + this.name + '" <tasks: ' + tasks + '>>';
   // };
 
   /**
-   * Expose `Runner`
+   * Get the depth of the current instance. This provides a quick
+   * insight into how many levels of nesting there are between
+   * the `base` instance and the current application.
+   *
+   * ```js
+   * console.log(this.depth);
+   * //= 1
+   * ```
+   * @return {Number}
    */
 
+  utils.define(Runner.prototype, 'depth', {
+    get: function() {
+      return this.parent ? this.parent.depth + 1 : 0;
+    }
+  });
+
+  /**
+   * Get the `base` instance.
+   *
+   * ```js
+   * var base = this.base;
+   * ```
+   * @return {Object}
+   */
+
+  utils.define(Runner.prototype, 'base', {
+    get: function() {
+      return this.parent ? this.parent.base : this;
+    }
+  });
+
+  /**
+   * Get the `path` for the instance.
+   */
+
+  utils.define(Runner.prototype, 'path', {
+    set: function(fp) {
+      this.cache.path = fp;
+    },
+    get: function() {
+      var fp = this.cache.path || this.options.path || 'none';
+      return (this.cache.path = fp);
+    }
+  });
+
+  /**
+   * Get the `cwd` (current working directory) for the application instance.
+   */
+
+  utils.define(Runner.prototype, 'cwd', {
+    set: function(dir) {
+      this.cache.cwd = dir;
+    },
+    get: function() {
+      return this.cache.cwd || (this.cache.cwd = process.cwd());
+    }
+  });
+
+  /**
+   * Get the `dirname` for the application instance.
+   */
+
+  utils.define(Runner.prototype, 'dirname', {
+    set: function(dir) {
+      this.path = path.join(dir, path.basename(this.path));
+    },
+    get: function() {
+      return path.dirname(this.path);
+    }
+  });
+
+  /**
+   * Get the `basename` for the application instance.
+   */
+
+  utils.define(Runner.prototype, 'basename', {
+    set: function(basename) {
+      this.path = path.join(path.dirname(this.path), basename);
+    },
+    get: function() {
+      return path.basename(this.path);
+    }
+  });
+
+  /**
+   * Get the `filename` for the application instance.
+   */
+
+  utils.define(Runner.prototype, 'filename', {
+    set: function(filename) {
+      this.path = path.join(path.dirname(this.path), filename + this.extname);
+    },
+    get: function() {
+      return path.basename(this.path, this.extname);
+    }
+  });
   return Runner;
 };
 
-function createConfig(config) {
-  if (typeof config === 'undefined') {
-    throw new TypeError('base-runner expected an options object');
-  }
+/**
+ * Expose `runner`
+ */
 
-  config = utils.extend({}, config);
-  if (!config.single && config.method) {
-    config.single = utils.single(config.method);
-  }
-  if (!config.plural && config.method) {
-    config.plural = utils.plural(config.method);
-  }
-
-  if (!config.method && !config.single && !config.plural) {
-    var msg = 'expected "method", "single", or "plural" to be defined';
-    throw new Error(msg);
-  }
-  return config;
-}
+module.exports = runner;
