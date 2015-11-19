@@ -4,7 +4,9 @@ var Generate = require('generate');
 var generator = Generate.generator;
 var create = require('..');
 
-var Runner = create(Generate);
+var Runner = create(Generate, {
+  method: 'generator'
+});
 
 var app = new Runner();
 app.on('error', function(err) {

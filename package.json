@@ -21,6 +21,8 @@
   "dependencies": {
     "async": "^1.5.0",
     "base-methods": "^0.5.0",
+    "base-resolver": "^0.1.1",
+    "base-tasks": "^0.1.2",
     "composer-runtimes": "^0.6.0",
     "define-property": "^0.2.5",
     "extend-shallow": "^2.0.1",
@@ -31,15 +33,28 @@
     "set-value": "^0.3.1"
   },
   "devDependencies": {
+    "assemble-core": "^0.2.1",
+    "base-resolver": "^0.1.1",
+    "generate": "^0.2.2",
     "gulp": "^3.9.0",
     "gulp-eslint": "^1.1.0",
     "gulp-istanbul": "^0.10.2",
     "gulp-mocha": "^2.2.0",
+    "minimist": "^1.2.0",
     "mocha": "*"
   },
   "keywords": [
     "base",
-    "runner"
+    "base-methods",
+    "baseplugin",
+    "build",
+    "builds",
+    "compose",
+    "methods",
+    "run",
+    "runner",
+    "task",
+    "tasks"
   ],
   "verb": {
     "related": {

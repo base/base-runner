@@ -29,7 +29,6 @@ app.on('error', function(err) {
 
 app.resolve(['generate-*/generate.js'], {
   resolveGlobal: true,
-  resolveLocal: true,
   paths: ['examples/apps'],
   filter: function(fp) {
     if (/_generate\/generate\-bar/.test(fp)) {

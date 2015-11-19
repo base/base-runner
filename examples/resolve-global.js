@@ -1,7 +1,7 @@
 'use strict';
 
 var Assemble = require('assemble-core');
-var resolver = require('base-register');
+var resolver = require('base-resolver');
 var create = require('..');
 
 function Base() {
@@ -19,7 +19,9 @@ var Runner = create(Assemble, {
 });
 
 var app = new Runner();
-app.use(resolver(Assemble));
+app.use(resolver(Assemble, {
+  method: 'generator'
+}));
 
 app.on('error', function(err) {
   console.log(err);

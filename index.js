@@ -124,6 +124,10 @@ function create(Base, config) {
     this.use(utils.runtimes());
     this.loadMiddleware({});
     this.loadTasks({});
+
+    this.on('register', function(alias, app) {
+      this.leaf(alias, app.tasks);
+    });
   };
 
   /**
