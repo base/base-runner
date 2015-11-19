@@ -80,8 +80,6 @@ function create(Base, config) {
     }
 
     Base.call(this);
-    this.use(utils.runtimes());
-
     if (typeof config.initFn === 'function') {
       config.initFn.call(this, this);
     }
@@ -119,7 +117,11 @@ function create(Base, config) {
    */
 
   Runner.prototype.initRunner = function() {
+    if (typeof this.task !== 'function') {
+      this.use(utils.tasks('runner'));
+    }
     this.use(env());
+    this.use(utils.runtimes());
     this.loadMiddleware({});
     this.loadTasks({});
   };
@@ -196,54 +198,15 @@ function create(Base, config) {
    * @api public
    */
 
-  Runner.prototype.build = function(tasks, cb) {
-    if (typeof tasks === 'string') {
-      return this.runTasks.apply(this, arguments);
-    }
-    if (utils.isObject(tasks)) {
-      return this.runTasks.apply(this, arguments);
-    }
-    if (Array.isArray(tasks)) {
-      if (utils.isSimpleTask(tasks)) {
-        proto.build.call(this, tasks, cb);
-        return this;
-      }
-      utils.async.each(tasks, function(task, next) {
-        this.build(task, next);
+  Runner.prototype.build = function(tasks, done) {
+    tasks = toTasks(tasks, this, plural);
+    utils.async.each(tasks, function(ele, cb) {
+      utils.async.eachOf(ele, function(list, name, next) {
+        var app = this[method](name);
+        this.emit('build', name, app);
+        proto.build.call(app, list, next);
       }.bind(this), cb);
-      return this;
-    }
-    this.emit('build', tasks);
-    proto.build.call(this, tasks, cb);
-  };
-
-  /**
-   * Proxy to `build`. Runs the given applications and their
-   * `tasks` with a `callback` function to be called when the
-   * tasks are complete.
-   *
-   * @param {String|Array|Object} `tasks`
-   * @param {Function} cb
-   * @return {Object} returns the instance for chaining
-   */
-
-  Runner.prototype.runTasks = function(tasks, cb) {
-    if (!utils.isObject(tasks)) {
-      tasks = toTasks(tasks, this, plural);
-    }
-
-    if (Array.isArray(tasks)) {
-      utils.async.each(tasks, function(task, next) {
-        this.build(task, next);
-      }.bind(this), cb);
-      return this;
-    }
-
-    utils.async.eachOf(tasks, function(list, name, next) {
-      var app = this[method](name);
-      this.emit('runTasks', name, app);
-      app.build(list, next);
-    }.bind(this), cb);
+    }.bind(this), done);
     return this;
   };
 
@@ -256,31 +219,9 @@ function create(Base, config) {
 
   Runner.prototype.leaf = function(name, tasks) {
     this.tree = this.tree || {};
-    this.tree[name] = Object.keys(tasks);
-  };
-
-  /**
-   * Custom `inspect` method.
-   */
-
-  Runner.prototype.inspect = function() {
-    var obj = {
-      options: this.options,
-      parent: Base.name,
-      name: this.name,
-      path: this.path,
-      env: this.env
-    };
-
-    obj.tasks = Object.keys(this.tasks);
-    if (this.tree) {
-      obj.tree = this.tree;
+    if (name && tasks) {
+      this.tree[name] = Object.keys(tasks);
     }
-
-    if (typeof config.inspectFn === 'function') {
-      config.inspectFn.call(this, obj, this);
-    }
-    return obj;
   };
 
   /**
