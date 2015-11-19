@@ -1,8 +1,37 @@
 'use strict';
 
-var Generate = require('./sandbox/generator');
-var app = new Generate();
+var Base = require('assemble-core');
+// var Runner = require('./sandbox/generate');
+var utils = require('./lib/utils');
 
+function Generate() {
+  Base.apply(this, arguments);
+  this.isGenerate = true;
+  this.isGenerator = false;
+}
+Base.extend(Generate);
+
+function Generator(name, options, parent, fn) {
+  this.alias = utils.alias(name, options);
+  if (this.alias === '.') {
+    this.alias = utils.project(process.cwd());
+  }
+  this.name = name;
+  this.isGenerator = true;
+  Generate.call(this, options, parent, fn);
+}
+Generate.extend(Generator);
+
+
+var runner = require('./sandbox/runner');
+var Runner = runner(Generate, Generator, {
+  child: 'Generator',
+  parent: 'Generate',
+  method: 'generator',
+  cache: 'generators'
+});
+
+var app = new Runner();
 
 app.resolve(['generate-*/generate.js'], {
   resolveGlobal: true,
@@ -44,6 +73,7 @@ app.task('baz', ['bar'], function (cb) {
 });
 
 app.register('one', function(one, base, env) {
+  console.log(this)
   one.task('x', function(cb) {
     console.log('this is "one:x"')
     cb();
@@ -99,17 +129,27 @@ app.register('one', function(one, base, env) {
 //   console.log();
 // });
 
-app.build(['base:foo,baz', 'foo', 'baz'], function(err) {
-  if (err) return console.log(err)
-  console.log('done!');
-  console.log();
-});
+// app.build(['base:foo,baz', 'foo', 'baz'], function(err) {
+//   if (err) return console.log(err)
+//   console.log('done!');
+//   console.log();
+// });
 
 // app.build(['foo', 'baz'], function(err) {
 //   if (err) return console.log(err)
 //   console.log('done!');
 //   console.log();
 // });
+
+app.build('one:x', function(err) {
+  if (err) return console.log(err)
+  console.log('done!');
+  console.log();
+});
+
+/**
+ * Nested
+ */
 
 // app.build('one.a:ax', function(err) {
 //   if (err) return console.log(err)
