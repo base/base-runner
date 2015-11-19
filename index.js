@@ -196,13 +196,6 @@ function create(Base, child, config) {
       this.run(app);
     }
 
-    if (app.moduleFn) {
-
-    // console.log(app)
-    } else {
-
-    }
-
     this.emit('register', alias, app);
     this.leaf(alias, tasks);
 
