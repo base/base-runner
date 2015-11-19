@@ -26,7 +26,7 @@ var env = {
     },
     config: {
       file: 'generate.js',
-      alias: function() {
+      aliasFn: function() {
       }
     },
     module: {

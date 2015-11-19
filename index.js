@@ -43,19 +43,18 @@ function create(Base, child, config) {
 
     Base.call(this);
     this.use(runtimes());
-    this.validate();
 
     if (typeof config.initFn === 'function') {
       config.initFn.call(this, this);
     }
 
-    this[plural] = {};
     if (!this.name) {
-      this.name = this.options.name || 'root';
+      this.name = this.options.name || 'base';
     }
 
     this.options = options || {};
     this.define('parent', null);
+    this[plural] = {};
     this.config = {};
     this.paths = {};
     this.env = {};
@@ -63,7 +62,7 @@ function create(Base, child, config) {
     if (parent) {
       this.parent = parent;
     } else {
-      this.initEnv();
+      this.initRunner();
     }
 
     if (typeof fn === 'function') {
@@ -78,24 +77,16 @@ function create(Base, child, config) {
   Base.extend(Runner);
 
   /**
-   * Create a new App
+   * Create a the "App" constructor for Runner to use.
    */
 
   var App = child(Runner, config);
 
   /**
-   * Validate arguments passed to `Runner`
-   */
-
-  Runner.prototype.validate = function() {
-    // assert(!'set' in this, red('app should not have `set`'));
-  };
-
-  /**
    * Create the `base` runner instance, along with any defaults,.
    */
 
-  Runner.prototype.initEnv = function() {
+  Runner.prototype.initRunner = function() {
     this.use(env());
     this.loadMiddleware({});
     this.loadTasks({});
@@ -167,9 +158,9 @@ function create(Base, child, config) {
     if (name === 'base') return this;
     name = name.split('.').join('.' + plural + '.');
     var res = utils.get(this[plural], name);
-    if (typeof res === 'undefined') {
-      throw new Error('Runner cannot resolve ' + name);
-    }
+    // if (typeof res === 'undefined') {
+    //   throw new Error('Runner cannot resolve ' + name);
+    // }
     return res;
   };
 
@@ -248,7 +239,7 @@ function create(Base, child, config) {
 
   Runner.prototype.runTasks = function(tasks, cb) {
     if (!utils.isObject(tasks)) {
-      tasks = toTasks(tasks);
+      tasks = toTasks(tasks, this);
     }
 
     if (Array.isArray(tasks)) {
@@ -267,7 +258,7 @@ function create(Base, child, config) {
   };
 
   Runner.prototype.build = function(tasks, cb) {
-    if (typeof tasks === 'string' && /\W/.test(tasks)) {
+    if (typeof tasks === 'string') {
       return this.runTasks.apply(this, arguments);
     }
     if (utils.isObject(tasks)) {

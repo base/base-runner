@@ -12,28 +12,14 @@ function Generate() {
 }
 Base.extend(Generate);
 
-// function generator(Runner) {
-//   function Generator(name, options, parent, fn) {
-//     Runner.call(this, options, parent, fn);
-//     this.name = name;
-//     this.isGenerator = true;
-//     this.alias = utils.alias(name, options);
-//     if (this.alias === '.') {
-//       this.alias = utils.project(process.cwd());
-//     }
-//   }
-//   Runner.extend(Generator);
-//   return Generator;
-// }
-
 var create = require('./');
 var Runner = create(Generate, generator, {
-  child: 'Generator',
   parent: 'Generate',
+  child: 'Generator',
   appname: 'generate',
   method: 'generator',
   plural: 'generators',
-  configFile: 'generate.js',
+  configfile: 'generate.js',
   initFn: function () {
     this.isGenerate = true;
     this.isGenerator = false;
@@ -117,18 +103,24 @@ app.register('one', function(one, base, env) {
   one.register('d', function() {});
 });
 
-// app.register('two', function(two, base, env) {
-//   two.task('x', function() {});
-//   two.task('y', function() {});
-// });
+app.register('two', function(two, base, env) {
+  two.task('x', function(cb) {
+    console.log('task:x');
+    cb();
+  });
+  two.task('y', function(cb) {
+    console.log('task:y');
+    cb();
+  });
+});
 
 // app.resolve(['app-*/app.js'], {
 //   paths: ['examples/apps']
 // });
 
-// app.build('foo', function() {
+app.build('two', function() {
 
-// })
+})
 
 // app.build('base.foo|one.a:ax', function(err) {
 //   if (err) return console.log(err);
@@ -142,11 +134,11 @@ app.register('one', function(one, base, env) {
 //   console.log();
 // });
 
-app.build(['base:foo,baz', 'foo', 'baz'], function(err) {
-  if (err) return console.log(err)
-  console.log('done!');
-  console.log();
-});
+// app.build(['base:foo,baz', 'foo', 'baz'], function(err) {
+//   if (err) return console.log(err)
+//   console.log('done!');
+//   console.log();
+// });
 
 // app.build(['foo', 'baz'], function(err) {
 //   if (err) return console.log(err)
@@ -185,6 +177,13 @@ app.build(['base:foo,baz', 'foo', 'baz'], function(err) {
 // console.log(app)
 
 // app.build('one.a.aa.aaa:foo', function(err) {
+//   if (err) return console.log(err)
+//   console.log('done!');
+//   console.log();
+// });
+
+
+// app.build('one:x', function(err) {
 //   if (err) return console.log(err)
 //   console.log('done!');
 //   console.log();
