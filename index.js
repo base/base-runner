@@ -119,8 +119,12 @@ function create(Base, child, config) {
    * @return {Object} Returns the instance, for chaining.
    */
 
-  Runner.prototype.invoke = function(fn, app) {
-    fn.call(this, app || this, this.base, this.env);
+  Runner.prototype.invoke = function(fn) {
+    var app = this;
+    if (this.Ctor && this.Ctor.prototype.register) {
+      app = new this.Ctor();
+    }
+    fn.call(this, app, this.base, this.env);
     return this;
   };
 
@@ -338,7 +342,7 @@ function create(Base, child, config) {
   });
 
   /**
-   * Get the `path` for the instance.
+   * Get the `path` for the generator.
    */
 
   utils.define(Runner.prototype, 'path', {
@@ -346,21 +350,154 @@ function create(Base, child, config) {
       this.cache.path = fp;
     },
     get: function() {
-      var fp = this.cache.path || this.options.path || 'none';
+      var fp = this.cache.path || process.cwd();
       return (this.cache.path = fp);
     }
   });
 
   /**
-   * Get the `cwd` (current working directory) for the application instance.
+   * Get the `name` for the generator.
+   */
+
+  utils.define(Runner.prototype, 'name', {
+    set: function(name) {
+      this.cache.name = name;
+    },
+    get: function() {
+      var name = this.cache.name || utils.nameFn(this.path, this.options);
+      return (this.cache.name = name);
+    }
+  });
+
+  /**
+   * Get the `alias` for the generator.
+   */
+
+  utils.define(Runner.prototype, 'alias', {
+    set: function(alias) {
+      this.cache.alias = alias;
+    },
+    get: function() {
+      var alias = this.cache.alias || utils.aliasFn(this.name, this.options);
+      return (this.cache.alias = alias);
+    }
+  });
+
+  /**
+   * Get the `cwd` (current working directory) for the generator.
+   */
+
+  utils.define(Runner.prototype, 'dirname', {
+    set: function(dir) {
+      this.cache.dirname = dir;
+    },
+    get: function() {
+      var dir = this.cache.dirname || path.dirname(this.path);
+      return this.cache.cwd || (this.cache.cwd = dir);
+    }
+  });
+
+  /**
+   * Get the `cwd` (current working directory) for the generator.
    */
 
   utils.define(Runner.prototype, 'cwd', {
-    set: function(dir) {
-      this.cache.cwd = dir;
+    set: function(cwd) {
+      this.cache.cwd = cwd;
     },
     get: function() {
-      return this.cache.cwd || (this.cache.cwd = process.cwd());
+      return this.cache.cwd || (this.cache.cwd = this.dirname);
+    }
+  });
+
+  /**
+   * Get the `configfile` for the generator.
+   */
+
+  utils.define(Runner.prototype, 'configfile', {
+    set: function(configfile) {
+      this.cache.configfile = configfile;
+    },
+    get: function() {
+      if (this.cache.hasOwnProperty('configfile')) {
+        return this.cache.configfile;
+      }
+      if (this.options.configfile) {
+        this.cache.configfile = this.options.configfile;
+      } else {
+        this.cache.configfile = 'generate.js';
+      }
+      return this.cache.configfile;
+    }
+  });
+
+  /**
+   * Get the `configfile` for the generator.
+   */
+
+  utils.define(Runner.prototype, 'configPath', {
+    set: function(configPath) {
+      this.cache.configPath = configPath;
+    },
+    get: function() {
+      if (this.cache.hasOwnProperty('configPath')) {
+        return this.cache.configPath;
+      }
+      return (this.cache.configPath = path.join(this.cwd, this.options.configfile));
+    }
+  });
+
+  /**
+   * Get the `modulePath` for the constructor to use for the generator.
+   */
+
+  utils.define(Runner.prototype, 'appname', {
+    set: function(appname) {
+      this.cache.appname = appname;
+    },
+    get: function() {
+      if (this.cache.hasOwnProperty('appname')) {
+        return this.cache.appname;
+      }
+      var appname = this.options.appname || this.options.method;
+      return (this.cache.appname = appname);
+    }
+  });
+
+  /**
+   * Get the `modulePath` for the constructor to use for the generator.
+   */
+
+  utils.define(Runner.prototype, 'modulePath', {
+    set: function(modulePath) {
+      this.cache.modulePath = modulePath;
+    },
+    get: function() {
+      if (this.cache.hasOwnProperty('modulePath')) {
+        return this.cache.modulePath;
+      }
+      if (this.appname) {
+        var fp = utils.resolveModule(this.cwd, this.appname);
+        return (this.cache.modulePath = fp);
+      }
+      return null;
+    }
+  });
+
+  /**
+   * Get the `Ctor` for the generator.
+   */
+
+  utils.define(Runner.prototype, 'Ctor', {
+    set: function(Ctor) {
+      this.cache.Ctor = Ctor;
+    },
+    get: function() {
+      if (typeof this.cache.Ctor === 'function') {
+        return this.cache.Ctor;
+      }
+      var fn = this.modulePath ? require(this.modulePath) : null;
+      return (this.cache.Ctor = fn);
     }
   });
 
