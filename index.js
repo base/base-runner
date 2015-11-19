@@ -1,23 +1,19 @@
 'use strict';
 
-var path = require('path');
-var red = require('ansi-red');
 var toTasks = require('./lib/to-tasks');
 var utils = require('./lib/utils');
 var env = require('./lib/env');
 
-function create(Base, child, config) {
+function create(Base, config) {
   if (utils.isObject(Base)) {
-    child = Base;
+    config = Base;
     Base = require('base-methods');
-    config = {};
   }
 
-  config = utils.createConfig(config);
+  config = utils.createConfig(config || {});
   var proto = Base.prototype;
   var method = config.method || 'app';
   var plural = config.plural || 'apps';
-  var App;
 
   /**
    * Create an instance of Runner with the given options.
@@ -104,6 +100,25 @@ function create(Base, child, config) {
   };
 
   /**
+   * Call the given `fn` in the context if the current instance,
+   * passing the instance, the `base` instance, and `env` as
+   * arguments to `fn`.
+   *
+   * @param {Function} `fn`
+   * @return {Object} Returns the instance, for chaining.
+   */
+
+  Runner.prototype.invoke = function(fn) {
+    var App = this.Ctor;
+    var app = this;
+    if (App && App.prototype.register) {
+      app = new App();
+    }
+    fn.call(this, app, this.base, this.env);
+    return this;
+  };
+
+  /**
    * Run the given applications and their `tasks`. The given
    * `callback` function will be called when the tasks are complete.
    *
@@ -175,25 +190,6 @@ function create(Base, child, config) {
   };
 
   /**
-   * Call the given `fn` in the context if the current instance,
-   * passing the instance, the `base` instance, and `env` as
-   * arguments to `fn`.
-   *
-   * @param {Function} `fn`
-   * @return {Object} Returns the instance, for chaining.
-   */
-
-  Runner.prototype.invoke = function(fn) {
-    var App = this.Ctor;
-    var app = this;
-    if (App && App.prototype.register) {
-      app = new App();
-    }
-    fn.call(this, app, this.base, this.env);
-    return this;
-  };
-
-  /**
    * Add a leaf to the task-runner tree.
    *
    * @param {String} `name`
@@ -211,20 +207,20 @@ function create(Base, child, config) {
 
   Runner.prototype.inspect = function() {
     var obj = {
+      options: this.options,
       parent: Base.name,
       name: this.name,
       path: this.path,
-      env: this.env,
-      options: this.options,
+      env: this.env
     };
-
-    if (typeof config.inspectFn === 'function') {
-      config.inspectFn.call(this, obj, this);
-    }
 
     obj.tasks = Object.keys(this.tasks);
     if (this.tree) {
       obj.tree = this.tree;
+    }
+
+    if (typeof config.inspectFn === 'function') {
+      config.inspectFn.call(this, obj, this);
     }
     return obj;
   };

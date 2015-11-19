@@ -1,6 +1,6 @@
 'use strict';
 
-// require('time-require');
+require('time-require');
 var argv = require('minimist')(process.argv.slice(2));
 var Generate = require('./generate');
 var create = require('../');
@@ -14,48 +14,48 @@ var Runner = create(Generate, {
   }
 });
 
-// var runner = new Runner(argv);
-// console.time('runner');
-// runner.resolve(['generate-*/generate.js'], {
-//   cwd: '@/'
-// });
-// console.log(runner)
-// console.timeEnd('runner');
-// runner.on('register', function() {
-//   // console.log(arguments)
-// });
+var runner = new Runner(argv);
+console.time('runner');
+runner.resolve(['generate-*/generate.js'], {
+  cwd: '@/'
+});
+console.log(runner)
+console.timeEnd('runner');
+runner.on('register', function() {
+  // console.log(arguments)
+});
 
-// runner.on('resolve', function(filepath) {
+runner.on('resolve', function(filepath) {
 
-// });
+});
 
-// runner.resolve('generate-*/generate.js', {
-//   cwd: 'examples/apps'
-// });
+runner.resolve('generate-*/generate.js', {
+  cwd: 'examples/apps'
+});
 
-// runner.register(['generate-*/generate.js'], {
-//   paths: ['examples/app'],
-//   filter: function(fp) {
-//     return true;
-//   }
-// });
+runner.register(['generate-*/generate.js'], {
+  paths: ['examples/app'],
+  filter: function(fp) {
+    return true;
+  }
+});
 
-// runner.register('generate.js', 'generate-*', {
-//   cwd: 'examples/apps'
-// });
+runner.register('generate.js', 'generate-*', {
+  cwd: 'examples/apps'
+});
 
-// runner.register('generate-aaa', function (app, base, env) {
-//   // console.log(arguments)
-// });
+runner.register('generate-aaa', function (app, base, env) {
+  // console.log(arguments)
+});
 
-// runner.register('generate-bbb', function (app, base, env) {
-//   // console.log(arguments)
-// });
+runner.register('generate-bbb', function (app, base, env) {
+  // console.log(arguments)
+});
 
-// runner.register('ccc', function (app, base, env) {
-//   console.log(base.generators)
-// });
+runner.register('ccc', function (app, base, env) {
+  console.log(base.generators)
+});
 
 
-// console.log(runner.generators)
-// console.log(runner.argv('foo'))
+console.log(runner.generators)
+console.log(runner.argv('foo'))

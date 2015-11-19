@@ -13,7 +13,7 @@ describe('create', function() {
   });
 
   it('should use Base when no constructor is passed', function() {
-    var Runner = create({
+    var Runner = create({}, {}, {
       method: 'foo'
     });
     var runner = new Runner();
@@ -91,5 +91,4 @@ describe('runner', function() {
       runner.emit('error', new Error('foo'));
     });
   });
-
 });

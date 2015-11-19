@@ -1,21 +1,10 @@
 'use strict';
 
-var Base = require('assemble-core');
-var config = require('base-config');
-// var Generate = require('./lib/generate');
 var Generate = require('generate');
-var generator = require('./lib/generator');
-var utils = require('./lib/utils');
-
-// function Generate() {
-//   Base.apply(this, arguments);
-//   this.isGenerate = true;
-//   this.isGenerator = false;
-// }
-// Base.extend(Generate);
+var generator = Generate.generator;
 
 var create = require('./');
-var Runner = create(Generate, generator, {
+var Runner = create(Generate, {
   parent: 'Generate',
   child: 'Generator',
   appname: 'generate',
