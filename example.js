@@ -72,7 +72,6 @@ app.task('baz', ['bar'], function (cb) {
 });
 
 app.register('one', function(one, base, env) {
-  console.log(this)
   one.task('x', function(cb) {
     console.log('this is "one:x"')
     cb();
@@ -118,9 +117,10 @@ app.register('two', function(two, base, env) {
 //   paths: ['examples/apps']
 // });
 
-app.build('two', function() {
-
-})
+app.build('two', function(err) {
+  if (err) return console.log(err);
+  console.log('build > two: done!');
+});
 
 // app.build('base.foo|one.a:ax', function(err) {
 //   if (err) return console.log(err);

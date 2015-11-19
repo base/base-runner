@@ -239,7 +239,7 @@ function create(Base, child, config) {
 
   Runner.prototype.runTasks = function(tasks, cb) {
     if (!utils.isObject(tasks)) {
-      tasks = toTasks(tasks, this);
+      tasks = toTasks(tasks, this, plural);
     }
 
     if (Array.isArray(tasks)) {
