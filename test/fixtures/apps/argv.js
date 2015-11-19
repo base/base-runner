@@ -10,7 +10,6 @@ module.exports = function (options) {
     function expandArgs(options) {
       // var commands = options.commands;
       // var apps = options.apps;
-      app.commands
     }
   }
 }

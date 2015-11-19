@@ -28,14 +28,14 @@ describe('utils', function() {
 
     it('should return `base` property with an array of tasks', function() {
       var generators = toTasks('foo');
-      assert(generators)
+      assert(generators);
       assert(Array.isArray(generators[0].base));
       assert.equal(generators[0].base.length, 1);
     });
 
     it('should put consecutive `base` tasks in the same array', function() {
       var generators = toTasks(['foo', 'bar']);
-      assert(generators)
+      assert(generators);
       assert(Array.isArray(generators[0].base));
       assert.equal(generators[0].base.length, 2);
     });
