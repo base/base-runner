@@ -8,6 +8,26 @@ var env = require('./lib/env');
  * Create a Runner application using the given `Base` constructor
  * and `config`.
  *
+ * ```js
+ * var create = require('base-runner');
+ * var Runner = create(Generate, {
+ *   parent: 'Generate',
+ *   child: 'Generator',
+ *   appname: 'generate',
+ *   method: 'generator',
+ *   plural: 'generators',
+ *   configfile: 'generate.js',
+ *   initFn: function () {
+ *     this.isGenerate = true;
+ *     this.isGenerator = false;
+ *   },
+ *   inspectFn: function (obj) {
+ *     obj.isGenerate = this.isGenerate;
+ *     obj.isGenerator = this.isGenerator;
+ *     obj.generators = this.generators;
+ *   },
+ * });
+ * ```
  * @param {Function} `Base` constructor function
  * @param {Object} `config`
  * @return {Function}
@@ -37,24 +57,7 @@ function create(Base, config) {
    *
    * ```js
    * var create = require('base-runner');
-   * var Runner = create(Generate, {
-   *   parent: 'Generate',
-   *   child: 'Generator',
-   *   appname: 'generate',
-   *   method: 'generator',
-   *   plural: 'generators',
-   *   configfile: 'generate.js',
-   *   initFn: function () {
-   *     this.isGenerate = true;
-   *     this.isGenerator = false;
-   *   },
-   *   inspectFn: function (obj) {
-   *     obj.isGenerate = this.isGenerate;
-   *     obj.isGenerator = this.isGenerator;
-   *     obj.generators = this.generators;
-   *   },
-   * });
-   *
+   * var Runner = create(Generate, {...});
    * var app = new Runner();
    * ```
    * @param {Object} `options`
@@ -159,17 +162,36 @@ function create(Base, config) {
   };
 
   /**
-   * Run the given applications and their `tasks`. The given
-   * `callback` function will be called when the tasks are complete.
+   * Run task(s) or applications and their task(s), calling the `callback`
+   * function when the tasks are complete.
    *
    * ```js
-   * generators: {
-   *   foo: ['one', 'two'], // tasks
-   *   bar: ['three']
-   * }
+   * // run tasks
+   * app.task('foo', function() {});
+   * app.build(['foo'], function(err) {
+   *   // foo is complete!
+   * });
+   *
+   * // run generators and their tasks
+   * app.register('one', function(one) {
+   *   one.task('foo', function() {});
+   *   one.task('bar', function() {});
+   * });
+   * app.build('one', function(err) {
+   *   // one is complete!
+   * });
+   *
+   * // run a specific generator-task
+   * app.register('one', function(one) {
+   *   one.task('foo', function() {});
+   *   one.task('bar', function() {});
+   * });
+   * app.build('one:bar', function(err) {
+   *   // one:bar is complete!
+   * });
    * ```
    * @param {String|Array|Object} `tasks`
-   * @param {Function} cb
+   * @param {Function} `cb`
    * @return {Object} returns the instance for chaining
    * @api public
    */
@@ -196,19 +218,13 @@ function create(Base, config) {
   };
 
   /**
-   * Run the given applications and their `tasks`. The given
-   * `callback` function will be called when the tasks are complete.
+   * Proxy to `build`. Runs the given applications and their
+   * `tasks` with a `callback` function to be called when the
+   * tasks are complete.
    *
-   * ```js
-   * generators: {
-   *   foo: ['one', 'two'], // tasks
-   *   bar: ['three']
-   * }
-   * ```
    * @param {String|Array|Object} `tasks`
    * @param {Function} cb
    * @return {Object} returns the instance for chaining
-   * @api public
    */
 
   Runner.prototype.runTasks = function(tasks, cb) {
@@ -277,7 +293,7 @@ function create(Base, config) {
    * //= 1
    * ```
    * @name .depth
-   * @param {getter}
+   * @param {getter} Getter only
    * @return {Number}
    * @api public
    */
@@ -295,7 +311,7 @@ function create(Base, config) {
    * var base = this.base;
    * ```
    * @name .base
-   * @param {getter}
+   * @param {getter} Getter only
    * @return {Object} The `base` instance
    * @api public
    */

@@ -188,7 +188,15 @@ app.build('one:x', function(err) {
 });
 
 
+app.task('blah', function() {
+  console.log('this is blah!');
+});
+
+app.build('blah', function() {
+
+})
+
 // console.log(app)
-// console.log(app.generator('one'))
+console.log(app.generator('one'))
 // console.log(app.generator('one.a.aa.aaa'))
 
