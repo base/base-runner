@@ -8,17 +8,17 @@ var toTasks = require('./lib/to-tasks');
 var utils = require('./lib/utils');
 var env = require('./lib/env');
 
-function runner(Base, child, config) {
+function create(Base, child, config) {
   if (utils.isObject(Base)) {
     child = Base;
     Base = require('base-methods');
     config = {};
   }
 
-  config = config || {};
+  config = utils.createConfig(config);
   var proto = Base.prototype;
   var method = config.method || 'app';
-  var storageName = config.storageName || 'apps';
+  var plural = config.plural || 'apps';
 
   /**
    * Create an instance of Runner with the given options.
@@ -49,13 +49,15 @@ function runner(Base, child, config) {
       config.initFn.call(this, this);
     }
 
-    this[storageName] = {};
+    this[plural] = {};
     if (!this.name) {
       this.name = this.options.name || 'root';
     }
 
     this.options = options || {};
     this.define('parent', null);
+    this.config = {};
+    this.paths = {};
     this.env = {};
 
     if (parent) {
@@ -163,8 +165,8 @@ function runner(Base, child, config) {
 
   Runner.prototype.getApp = function(name) {
     if (name === 'base') return this;
-    name = name.split('.').join('.' + storageName + '.');
-    var res = utils.get(this[storageName], name);
+    name = name.split('.').join('.' + plural + '.');
+    var res = utils.get(this[plural], name);
     if (typeof res === 'undefined') {
       throw new Error('Runner cannot resolve ' + name);
     }
@@ -185,16 +187,26 @@ function runner(Base, child, config) {
     if (typeof options === 'function') {
       return this.register(name, {}, options);
     }
+
     var app = new App(name, options, this, fn);
     var alias = app.alias;
     var tasks = app.tasks;
 
-    console.log(app)
+    if (typeof app.use === 'function') {
+      this.run(app);
+    }
+
+    if (app.moduleFn) {
+
+    // console.log(app)
+    } else {
+
+    }
 
     this.emit('register', alias, app);
     this.leaf(alias, tasks);
 
-    this[storageName][alias] = app;
+    this[plural][alias] = app;
     return app;
   };
 
@@ -368,49 +380,11 @@ function runner(Base, child, config) {
     }
   });
 
-  /**
-   * Get the `dirname` for the application instance.
-   */
-
-  utils.define(Runner.prototype, 'dirname', {
-    set: function(dir) {
-      this.path = path.join(dir, path.basename(this.path));
-    },
-    get: function() {
-      return path.dirname(this.path);
-    }
-  });
-
-  /**
-   * Get the `basename` for the application instance.
-   */
-
-  utils.define(Runner.prototype, 'basename', {
-    set: function(basename) {
-      this.path = path.join(path.dirname(this.path), basename);
-    },
-    get: function() {
-      return path.basename(this.path);
-    }
-  });
-
-  /**
-   * Get the `filename` for the application instance.
-   */
-
-  utils.define(Runner.prototype, 'filename', {
-    set: function(filename) {
-      this.path = path.join(path.dirname(this.path), filename + this.extname);
-    },
-    get: function() {
-      return path.basename(this.path, this.extname);
-    }
-  });
   return Runner;
 };
 
 /**
- * Expose `runner`
+ * Expose `create`
  */
 
-module.exports = runner;
+module.exports = create;

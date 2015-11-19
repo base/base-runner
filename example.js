@@ -1,6 +1,7 @@
 'use strict';
 
 var Base = require('assemble-core');
+var config = require('base-config');
 var generator = require('./lib/generator');
 var utils = require('./lib/utils');
 
@@ -29,9 +30,10 @@ var create = require('./');
 var Runner = create(Generate, generator, {
   child: 'Generator',
   parent: 'Generate',
+  appname: 'generate',
   method: 'generator',
-  storageName: 'generators',
-  configfile: 'appfile.js',
+  plural: 'generators',
+  configFile: 'generate.js',
   initFn: function () {
     this.isGenerate = true;
     this.isGenerator = false;
