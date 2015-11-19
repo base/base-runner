@@ -4,23 +4,63 @@ var toTasks = require('./lib/to-tasks');
 var utils = require('./lib/utils');
 var env = require('./lib/env');
 
+/**
+ * Create a Runner application using the given `Base` constructor
+ * and `config`.
+ *
+ * @param {Function} `Base` constructor function
+ * @param {Object} `config`
+ * @return {Function}
+ * @api public
+ */
+
 function create(Base, config) {
   if (utils.isObject(Base)) {
     config = Base;
     Base = require('base-methods');
   }
 
+  // initialize configuration defaults
   config = utils.createConfig(config || {});
-  var proto = Base.prototype;
+
+  // get the primary names to use
   var method = config.method || 'app';
   var plural = config.plural || 'apps';
 
+  // store a reference to the `Base` prototype
+  var proto = Base.prototype;
+
   /**
-   * Create an instance of Runner with the given options.
+   * Create an instance of Runner with the given `options`,
+   * and optionally a `parent` instance and `fn` to be invoked
+   * (for example, `fn` would be an updater or generator).
    *
+   * ```js
+   * var create = require('base-runner');
+   * var Runner = create(Generate, {
+   *   parent: 'Generate',
+   *   child: 'Generator',
+   *   appname: 'generate',
+   *   method: 'generator',
+   *   plural: 'generators',
+   *   configfile: 'generate.js',
+   *   initFn: function () {
+   *     this.isGenerate = true;
+   *     this.isGenerator = false;
+   *   },
+   *   inspectFn: function (obj) {
+   *     obj.isGenerate = this.isGenerate;
+   *     obj.isGenerator = this.isGenerator;
+   *     obj.generators = this.generators;
+   *   },
+   * });
+   *
+   * var app = new Runner();
+   * ```
    * @param {Object} `options`
    * @param {Object} `parent`
    * @param {Function} `fn`
+   * @api public
    */
 
   function Runner(options, parent, fn) {
@@ -131,6 +171,7 @@ function create(Base, config) {
    * @param {String|Array|Object} `tasks`
    * @param {Function} cb
    * @return {Object} returns the instance for chaining
+   * @api public
    */
 
   Runner.prototype.build = function(tasks, cb) {
@@ -167,6 +208,7 @@ function create(Base, config) {
    * @param {String|Array|Object} `tasks`
    * @param {Function} cb
    * @return {Object} returns the instance for chaining
+   * @api public
    */
 
   Runner.prototype.runTasks = function(tasks, cb) {
@@ -234,7 +276,10 @@ function create(Base, config) {
    * console.log(this.depth);
    * //= 1
    * ```
+   * @name .depth
+   * @param {getter}
    * @return {Number}
+   * @api public
    */
 
   utils.define(Runner.prototype, 'depth', {
@@ -244,12 +289,15 @@ function create(Base, config) {
   });
 
   /**
-   * Get the `base` instance.
+   * Gets the `base` instance, which is the first instance created.
    *
    * ```js
    * var base = this.base;
    * ```
-   * @return {Object}
+   * @name .base
+   * @param {getter}
+   * @return {Object} The `base` instance
+   * @api public
    */
 
   utils.define(Runner.prototype, 'base', {
