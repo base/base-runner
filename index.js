@@ -119,8 +119,8 @@ function create(Base, child, config) {
    * @return {Object} Returns the instance, for chaining.
    */
 
-  Runner.prototype.invoke = function(fn) {
-    fn.call(this, this, this.base, this.env);
+  Runner.prototype.invoke = function(fn, app) {
+    fn.call(this, app || this, this.base, this.env);
     return this;
   };
 
