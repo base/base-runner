@@ -27,6 +27,7 @@
     "base-config": "^0.2.0",
     "base-methods": "^0.5.0",
     "base-options": "^0.5.4",
+    "base-paths": "^0.1.1",
     "base-plugins": "^0.4.1",
     "composer": "^0.8.0",
     "composer-runtimes": "^0.6.0",

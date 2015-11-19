@@ -2,15 +2,17 @@
 
 var Base = require('assemble-core');
 var config = require('base-config');
+// var Generate = require('./lib/generate');
+var Generate = require('generate');
 var generator = require('./lib/generator');
 var utils = require('./lib/utils');
 
-function Generate() {
-  Base.apply(this, arguments);
-  this.isGenerate = true;
-  this.isGenerator = false;
-}
-Base.extend(Generate);
+// function Generate() {
+//   Base.apply(this, arguments);
+//   this.isGenerate = true;
+//   this.isGenerator = false;
+// }
+// Base.extend(Generate);
 
 var create = require('./');
 var Runner = create(Generate, generator, {
@@ -122,35 +124,35 @@ app.build('two', function(err) {
   console.log('build > two: done!');
 });
 
-// app.build('base.foo|one.a:ax', function(err) {
-//   if (err) return console.log(err);
-//   console.log('done!');
-//   console.log();
-// });
+app.build('base:foo|one.a:ax', function(err) {
+  if (err) return console.log(err);
+  console.log('done!');
+  console.log();
+});
 
-// app.build(['base:foo,baz|one.a:ax', 'foo', 'baz'], function(err) {
-//   if (err) return console.log(err)
-//   console.log('done!');
-//   console.log();
-// });
+app.build(['base:foo,baz|one.a:ax', 'foo', 'baz'], function(err) {
+  if (err) return console.log(err)
+  console.log('done!');
+  console.log();
+});
 
-// app.build(['base:foo,baz', 'foo', 'baz'], function(err) {
-//   if (err) return console.log(err)
-//   console.log('done!');
-//   console.log();
-// });
+app.build(['base:foo,baz', 'foo', 'baz'], function(err) {
+  if (err) return console.log(err)
+  console.log('done!');
+  console.log();
+});
 
-// app.build(['foo', 'baz'], function(err) {
-//   if (err) return console.log(err)
-//   console.log('done!');
-//   console.log();
-// });
+app.build(['foo', 'baz'], function(err) {
+  if (err) return console.log(err)
+  console.log('done!');
+  console.log();
+});
 
-// app.build('one:x', function(err) {
-//   if (err) return console.log(err)
-//   console.log('done!');
-//   console.log();
-// });
+app.build('one:x', function(err) {
+  if (err) return console.log(err)
+  console.log('done!');
+  console.log();
+});
 
 /**
  * Nested
@@ -176,18 +178,25 @@ app.build('two', function(err) {
 
 // console.log(app)
 
-// app.build('one.a.aa.aaa:foo', function(err) {
-//   if (err) return console.log(err)
-//   console.log('done!');
-//   console.log();
-// });
+app.build('one.a.aa.aaa:foo', function(err) {
+  if (err) return console.log(err)
+  console.log('done!');
+  console.log();
+});
 
 
-// app.build('one:x', function(err) {
-//   if (err) return console.log(err)
-//   console.log('done!');
-//   console.log();
-// });
+app.build('one.a:ax', function(err) {
+  if (err) return console.log(err)
+  console.log('done!');
+  console.log();
+});
+
+
+app.build('one:x', function(err) {
+  if (err) return console.log(err)
+  console.log('done!');
+  console.log();
+});
 
 
 // console.log(app)
