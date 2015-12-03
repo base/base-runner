@@ -32,11 +32,14 @@ var utils = require('./utils');
  */
 
 function runner(moduleName, appName) {
-  appName = utils.inflection.singularize(appName);
+  var toSingle = utils.inflection.singularize;
+  var toPlural = utils.inflection.pluralize;
+
+  appName = toSingle(appName);
 
   // create property and method names
   var parent = utils.pascal(appName);
-  var plural = utils.inflection.pluralize(appName);
+  var plural = toPlural(appName);
   var isName = 'is' + utils.pascal(moduleName);
   var method = function(prop) {
     return prop + parent;
@@ -60,14 +63,15 @@ function runner(moduleName, appName) {
      * @api public
      */
 
-    Ctor.getConfig = function(filename) {
+    Ctor.getConfig = function(filename, fallback) {
       var base = utils.resolver.getConfig(filename, moduleName, {
         Ctor: Ctor,
+        fallback: fallback,
         isModule: function(app) {
           return app[isName];
         }
       });
-      base.initRunner(filename);
+      base.initRunner(base);
       return base;
     };
 
@@ -78,14 +82,34 @@ function runner(moduleName, appName) {
      * @return {Object}
      */
 
-    proto.initRunner = function() {
-      this.name = this.options.name || 'base';
+    proto.initRunner = function(base) {
+      var name = this.name = this.options.name || 'base';
       this.env = {};
 
       this[isName] = true;
       this[plural] = this[plural] || {};
 
-      this.use(utils.resolver(moduleName));
+      this
+        .use(utils.cli())
+        .use(utils.argv({prop: plural}))
+        .use(utils.resolver(moduleName))
+        .use(utils.runtimes({
+          displayName: function(key) {
+            return name + ':' + key;
+          }
+        }));
+
+      // get the argv processing fns from the instance
+      // (both do very different things)
+      var processFn = this.cli.process;
+      var argvFn = this.processArgv;
+
+      this.cli.process = function(argv) {
+        var args = argvFn.call(base, argv);
+        processFn.call(base.cli, args);
+        base.set('env.argv', args);
+        return args;
+      };
 
       this.on('config', function(env, mod) {
         if (env.alias === moduleName) env.alias = 'base';
@@ -154,7 +178,7 @@ function runner(moduleName, appName) {
       app.name = name;
       app.env = env;
 
-      this.emit('register', app.alias, app);
+      this.emit('register', name, app);
       this[plural][name] = app;
       return this;
     };
@@ -237,6 +261,47 @@ function runner(moduleName, appName) {
       }
       this.fn.call(app, app, this.base, app.env || this.env);
       return this;
+    };
+
+    /**
+     * Run one or more generators and the specified tasks for each.
+     *
+     * ```js
+     * // run the default tasks for generators `foo` and `bar`
+     * generate.runGenerators(['foo', 'bar'], function(err) {
+     *   if (err) return console.log(err);
+     *   console.log('done!');
+     * });
+     *
+     * // run the specified tasks for generators `foo` and `bar`
+     * var generators = {
+     *   foo: ['a', 'b', 'c'],
+     *   bar: ['x', 'y', 'z']
+     * };
+     *
+     * generate.runGenerators(generators, function(err) {
+     *   if (err) return console.log(err);
+     *   console.log('done!');
+     * });
+     * ```
+     * @param {Object} `generators`
+     * @param {Function} `done`
+     * @api public
+     */
+
+    proto[toPlural(method('run'))] = function(apps, done) {
+      if (!Array.isArray(apps) || !utils.isObject(apps[0])) {
+        apps = this.argv(apps)[plural];
+      }
+      utils.async.each(apps, function(app, cb) {
+        utils.async.eachOf(app, function(tasks, name, next) {
+          var instance = this[plural][name] || this;
+          if (!instance) {
+            return cb(new Error('cannot find ' + appName + ' "' + name + '"'));
+          }
+          return instance.build(tasks, cb);
+        }.bind(this), cb);
+      }.bind(this), done);
     };
 
     /**

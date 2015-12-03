@@ -24,10 +24,18 @@ require = utils;
  * Lazily required module dependencies
  */
 
+// "base" plugins
+require('composer-runtimes', 'runtimes');
 require('base-resolver', 'resolver');
+require('base-argv', 'argv');
+require('base-cli', 'cli');
+
+// misc
 require('extend-shallow', 'extend');
-require('inflection');
 require('pascalcase', 'pascal');
+require('isobject', 'isObject');
+require('inflection');
+require('async');
 
 /**
  * Restore `require`

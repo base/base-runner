@@ -21,9 +21,13 @@
     "test": "mocha"
   },
   "dependencies": {
+    "base-argv": "^0.2.0",
+    "base-cli": "^0.4.0",
     "base-resolver": "^0.2.0",
+    "composer-runtimes": "^0.6.0",
     "extend-shallow": "^2.0.1",
     "inflection": "^1.8.0",
+    "isobject": "^2.0.0",
     "lazy-cache": "^0.2.4",
     "pascalcase": "^0.1.0"
   },
