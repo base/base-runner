@@ -12,22 +12,37 @@ var utils = require('./utils');
 /**
  * Create a customized `Runner` constructor with the given `config`.
  *
- * @param {Object} `config`
+ * ```js
+ * var runner = require('base-runner');
+ * var Generate = require('generate');
+ *
+ * // register `runner` as a mixin
+ * Generate.mixin(runner('generate', 'generator'));
+ *
+ * // get the `base` instance
+ * var base = Generate.getConfig('generator.js')
+ *   .resolve('generator.js', {
+ *     cwd: __dirname
+ *   });
+ * ```
+ *
+ * @param {String} `moduleName` The name of the "parent" module, ex: `generate`
+ * @param {String} `appName` The name of the "child" apps, ex: `generator`
  * @return {Function}
  */
 
-function runner(moduleName, appname) {
-  appname = utils.inflection.singularize(appname);
+function runner(moduleName, appName) {
+  appName = utils.inflection.singularize(appName);
 
   // create property and method names
-  var parent = utils.pascal(appname);
-  var plural = utils.inflection.pluralize(appname);
+  var parent = utils.pascal(appName);
+  var plural = utils.inflection.pluralize(appName);
   var isName = 'is' + utils.pascal(moduleName);
   var method = function(prop) {
     return prop + parent;
   };
 
-  return function(proto) {
+  return function plugin(proto) {
     var Ctor = proto.constructor;
 
     /**
@@ -60,11 +75,10 @@ function runner(moduleName, appname) {
      * Private method for initializing runner defaults and listening for config
      * objects to be emitted.
      *
-     * @param {String} `filename` The name of the config file to resolve, ex: `assemblefile.js`, `generator.js`, etc.
      * @return {Object}
      */
 
-    proto.initRunner = function(filename) {
+    proto.initRunner = function() {
       this.name = this.options.name || 'base';
       this.env = {};
 
@@ -140,11 +154,7 @@ function runner(moduleName, appname) {
       app.name = name;
       app.env = env;
 
-      this.emit(appname, app.alias, app);
-      if (typeof app.use === 'function') {
-        this.run(app);
-      }
-
+      this.emit(appName, app.alias, app);
       this[plural][name] = app;
       return this;
     };
