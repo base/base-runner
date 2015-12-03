@@ -1,7 +1,7 @@
 {
   "name": "base-runner",
   "description": "Orchestrate multiple instances of base-methods at once.",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "homepage": "https://github.com/jonschlinkert/base-runner",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
   "repository": "jonschlinkert/base-runner",
@@ -34,8 +34,7 @@
     "gulp-eslint": "^1.1.1",
     "gulp-istanbul": "^0.10.3",
     "gulp-mocha": "^2.2.0",
-    "matched": "^0.3.2",
-    "mocha": "*"
+    "matched": "^0.3.2"
   },
   "keywords": [
     "base",
