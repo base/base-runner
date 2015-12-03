@@ -33,7 +33,7 @@ var base = Generate.getConfig('generator.js')
 
 ## API
 
-### [.getConfig](index.js#L48)
+### [.getConfig](index.js#L63)
 
 Static method for getting the very first instance to be used as the `base` instance. The first instance will either be defined by the user, like in local `node_modules`, or a globally installed module that serves as a default/fallback.
 
@@ -48,7 +48,7 @@ Static method for getting the very first instance to be used as the `base` insta
 var base = Base.getConfig('generator.js');
 ```
 
-### [.getTask](index.js#L102)
+### [.getTask](index.js#L116)
 
 Get task `name` from the `runner.tasks` object.
 
@@ -69,7 +69,7 @@ runner.getTask('foo:abc');
 runner.getTask('foo.bar:abc');
 ```
 
-### [.addApp](index.js#L162)
+### [.addApp](index.js#L172)
 
 Alias for `register`. Adds an `app` with the given `name`
 to the `runner.apps` object.
@@ -79,7 +79,7 @@ to the `runner.apps` object.
 * `name` **{String}**: The name of the config object to register
 * `config` **{Object|Function}**: The config object or function
 
-### [.hasApp](index.js#L179)
+### [.hasApp](index.js#L189)
 
 Return true if app `name` is registered. Dot-notation may be used to check for [sub-apps](#sub-apps).
 
@@ -94,7 +94,7 @@ Return true if app `name` is registered. Dot-notation may be used to check for [
 base.hasApp('foo.bar.baz');
 ```
 
-### [.getApp](index.js#L202)
+### [.getApp](index.js#L212)
 
 Return app `name` is registered. Dot-notation may be used to get [sub-apps](#sub-apps).
 
@@ -111,7 +111,7 @@ base.getApp('foo');
 base.getApp('foo.bar.baz');
 ```
 
-### [.extendApp](index.js#L224)
+### [.extendApp](index.js#L234)
 
 Extend an app.
 
@@ -127,7 +127,7 @@ var foo = base.getApp('foo');
 foo.extendApp(app);
 ```
 
-### [.invoke](index.js#L245)
+### [.invoke](index.js#L255)
 
 Invoke app `fn` with the given `base` instance.
 
