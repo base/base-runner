@@ -154,7 +154,7 @@ function runner(moduleName, appName) {
       app.name = name;
       app.env = env;
 
-      this.emit(appName, app.alias, app);
+      this.emit('register', app.alias, app);
       this[plural][name] = app;
       return this;
     };
