@@ -5,11 +5,13 @@
   "homepage": "https://github.com/jonschlinkert/base-runner",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
   "repository": "jonschlinkert/base-runner",
-  "bugs": "https://github.com/jonschlinkert/base-runner/issues",
+  "bugs": {
+    "url": "https://github.com/jonschlinkert/base-runner/issues"
+  },
   "license": "MIT",
   "files": [
     "index.js",
-    "lib/"
+    "utils.js"
   ],
   "main": "index.js",
   "engines": {
@@ -19,46 +21,31 @@
     "test": "mocha"
   },
   "dependencies": {
-    "async": "^1.5.0",
-    "base-methods": "^0.5.0",
-    "base-resolver": "^0.1.1",
-    "base-tasks": "^0.1.2",
-    "composer-runtimes": "^0.6.0",
-    "define-property": "^0.2.5",
+    "base-resolver": "^0.2.0",
     "extend-shallow": "^2.0.1",
-    "get-value": "^2.0.0",
-    "inflection": "^1.7.2",
-    "isobject": "^2.0.0",
+    "inflection": "^1.8.0",
     "lazy-cache": "^0.2.4",
-    "set-value": "^0.3.1"
+    "pascalcase": "^0.1.0"
   },
   "devDependencies": {
-    "assemble-core": "^0.2.1",
-    "base-resolver": "^0.1.1",
-    "generate": "^0.2.2",
-    "gulp": "^3.9.0",
-    "gulp-eslint": "^1.1.0",
-    "gulp-istanbul": "^0.10.2",
-    "gulp-mocha": "^2.2.0",
-    "minimist": "^1.2.0",
+    "assemble-core": "^0.5.0",
+    "global-modules": "^0.2.0",
+    "matched": "^0.3.2",
     "mocha": "*"
   },
   "keywords": [
     "base",
-    "base-methods",
-    "baseplugin",
-    "build",
-    "builds",
-    "compose",
-    "methods",
-    "run",
-    "runner",
-    "task",
-    "tasks"
+    "runner"
   ],
   "verb": {
     "related": {
-      "list": []
+      "list": [
+        "base-methods",
+        "base-resolver",
+        "base-plugins",
+        "base-store",
+        "base-options"
+      ]
     }
   }
 }
