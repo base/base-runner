@@ -1,277 +1,269 @@
+/*!
+ * base-runner <https://github.com/jonschlinkert/base-runner>
+ *
+ * Copyright (c) 2015, Jon Schlinkert.
+ * Licensed under the MIT License.
+ */
+
 'use strict';
 
-var toTasks = require('./lib/to-tasks');
-var utils = require('./lib/utils');
-var env = require('./lib/env');
+var utils = require('./utils');
 
 /**
- * Create a Runner application using the given `Base` constructor
- * and `config`.
+ * Create a customized `Runner` constructor with the given `config`.
  *
- * ```js
- * var create = require('base-runner');
- * var Runner = create(Generate, {
- *   parent: 'Generate',
- *   child: 'Generator',
- *   appname: 'generate',
- *   method: 'generator',
- *   plural: 'generators',
- *   configfile: 'generate.js',
- *   initFn: function () {
- *     this.isGenerate = true;
- *     this.isGenerator = false;
- *   },
- *   inspectFn: function (obj) {
- *     obj.isGenerate = this.isGenerate;
- *     obj.isGenerator = this.isGenerator;
- *     obj.generators = this.generators;
- *   },
- * });
- * ```
- * @param {Function} `Base` constructor function
  * @param {Object} `config`
  * @return {Function}
- * @api public
  */
 
-function create(Base, config) {
-  if (utils.isObject(Base)) {
-    config = Base;
-    Base = require('base-methods');
-  }
+function runner(moduleName, appname) {
+  appname = utils.inflection.singularize(appname);
 
-  // initialize configuration defaults
-  config = utils.createConfig(config || {});
+  // create property and method names
+  var parent = utils.pascal(appname);
+  var plural = utils.inflection.pluralize(appname);
+  var isName = 'is' + utils.pascal(moduleName);
+  var method = function(prop) {
+    return prop + parent;
+  };
 
-  // get the primary names to use
-  var method = config.method || 'app';
-  var plural = config.plural || 'apps';
+  return function(proto) {
+    var Ctor = proto.constructor;
 
-  // store a reference to the `Base` prototype
-  var proto = Base.prototype;
+    /**
+     * Static method for getting the very first instance to be used
+     * as the `base` instance. The first instance will either be defined
+     * by the user, like in local `node_modules`, or a globally installed
+     * module that serves as a default/fallback.
+     *
+     * ```js
+     * var base = Base.getConfig('generator.js');
+     * ```
+     * @name .getConfig
+     * @param {String} `filename` Then name of the config file to lookup.
+     * @return {Object} Returns the "base" instance.
+     * @api public
+     */
 
-  /**
-   * Create an instance of Runner with the given `options`,
-   * and optionally a `parent` instance and `fn` to be invoked
-   * (for example, `fn` would be an updater or generator).
-   *
-   * ```js
-   * var create = require('base-runner');
-   * var Runner = create(Generate, {...});
-   * var app = new Runner();
-   * ```
-   * @param {Object} `options`
-   * @param {Object} `parent`
-   * @param {Function} `fn`
-   * @api public
-   */
+    Ctor.getConfig = function(filename) {
+      var base = utils.resolver.getConfig(filename, moduleName, {
+        Ctor: Ctor,
+        isModule: function(app) {
+          return app[isName];
+        }
+      });
+      base.initRunner(filename);
+      return base;
+    };
 
-  function Runner(options, parent, fn) {
-    if (typeof options === 'function') {
-      return new Runner(null, null, options);
-    }
+    /**
+     * Private method for initializing runner defaults and listening for config
+     * objects to be emitted.
+     *
+     * @param {String} `filename` The name of the config file to resolve, ex: `assemblefile.js`, `generator.js`, etc.
+     * @return {Object}
+     */
 
-    if (typeof parent === 'function') {
-      return new Runner(options, null, parent);
-    }
+    proto.initRunner = function(filename) {
+      this.name = this.options.name || 'base';
+      this.env = {};
 
-    if (!(this instanceof Runner)) {
-      return new Runner(options, parent, fn);
-    }
+      this[isName] = true;
+      this[plural] = this[plural] || {};
 
-    Base.call(this);
-    if (typeof config.initFn === 'function') {
-      config.initFn.call(this, this);
-    }
+      this.use(utils.resolver(moduleName));
 
-    if (!this.name) {
-      this.name = Base.name || 'base';
-    }
+      this.on('config', function(env, mod) {
+        if (env.alias === moduleName) env.alias = 'base';
+        mod.path = mod.path || this.path;
+        this.register(env.alias, env.fn, this, env);
+      }.bind(this));
+      return this;
+    };
 
-    this.options = options || {};
-    this.define('parent', null);
-    this[plural] = {};
-    this.config = {};
-    this.paths = {};
-    this.env = {};
+    /**
+     * Get task `name` from the `runner.tasks` object.
+     *
+     * ```js
+     * runner.getTask('abc');
+     *
+     * // get a task from app `foo`
+     * runner.getTask('foo:abc');
+     *
+     * // get a task from sub-app `foo.bar`
+     * runner.getTask('foo.bar:abc');
+     * ```
+     * @name .getTask
+     * @param {String} `name`
+     * @return {Object}
+     * @api public
+     */
 
-    if (parent) {
-      this.parent = parent;
-    } else {
-      this.initRunner();
-    }
+    proto.getTask = function(name) {
+      var segments = name.split(':');
+      if (segments.length === 1) {
+        return this.tasks[name];
+      }
+      var app = this[method('get')](segments[0]);
+      return app.getTask(segments[1]);
+    };
 
-    if (typeof fn === 'function') {
-      this.invoke(fn);
-    }
-  }
+    /**
+     * Register `app` with the given `name`.
+     *
+     * ```js
+     * runner.register('foo', function(app, base, env) {
+     *   app.task('foo-a', function() {});
+     *   app.task('foo-b', function() {});
+     *   app.task('foo-c', function() {});
+     *
+     *   // sub-app
+     *   app.register('bar', function(sub) {
+     *     sub.task('bar-a', function() {});
+     *     sub.task('bar-b', function() {});
+     *     sub.task('bar-c', function() {});
+     *   });
+     * });
+     *  ```
+     * @name .register
+     * @param {String} `name` The app's name.
+     * @param {Object|Function} `app` Generator can be an instance of runner or a function. Generator functions are invoked with a new instance of `Runner`, a `base` instance that is used for storing all apps, and `env`, an object with user environment details, such as `cwd`.
+     * @return {String}
+     */
 
-  /**
-   * Inherit Base
-   */
+    proto.register = function(name, app, base, env) {
+      if (typeof app === 'function') {
+        app = this.invoke(app);
+      }
 
-  Base.extend(Runner);
+      app.define('parent', this);
+      app.name = name;
+      app.env = env;
 
-  /**
-   * Create the `base` runner instance, along with any defaults,.
-   */
+      this.emit(appname, app.alias, app);
+      if (typeof app.use === 'function') {
+        this.run(app);
+      }
 
-  Runner.prototype.initRunner = function() {
-    if (typeof this.task !== 'function') {
-      this.use(utils.tasks('runner'));
-    }
-    this.use(env());
-    this.use(utils.runtimes());
-    this.loadMiddleware({});
-    this.loadTasks({});
+      this[plural][name] = app;
+      return this;
+    };
 
-    this.on('register', function(alias, app) {
-      this.leaf(alias, app.tasks);
+    /**
+     * Alias for `register`. Adds an `app` with the given `name`
+     * to the `runner.apps` object.
+     *
+     * @name .addApp
+     * @param {String} `name` The name of the config object to register
+     * @param {Object|Function} `config` The config object or function
+     * @api public
+     */
+
+    proto[method('add')] = function(name, config) {
+      return this.register.apply(this, arguments);
+    };
+
+    /**
+     * Return true if app `name` is registered. Dot-notation
+     * may be used to check for [sub-apps](#sub-apps).
+     *
+     * ```js
+     * base.hasApp('foo.bar.baz');
+     * ```
+     * @name .hasApp
+     * @param {String} `name`
+     * @return {Boolean}
+     * @api public
+     */
+
+    proto[method('has')] = function(name) {
+      if (this[plural].hasOwnProperty(name)) {
+        return true;
+      }
+      name = name.split('.').join('.' + plural + '.');
+      return this.has([plural, name]);
+    };
+
+    /**
+     * Return app `name` is registered. Dot-notation
+     * may be used to get [sub-apps](#sub-apps).
+     *
+     * ```js
+     * base.getApp('foo');
+     * // or
+     * base.getApp('foo.bar.baz');
+     * ```
+     * @name .getApp
+     * @param {String} `name`
+     * @return {Boolean}
+     * @api public
+     */
+
+    proto[method('get')] = function(name) {
+      if (name === 'base') return this;
+      if (this[plural].hasOwnProperty(name)) {
+        return this[plural][name];
+      }
+      name = name.split('.').join('.' + plural + '.');
+      return this.get([plural, name]);
+    };
+
+    /**
+     * Extend an app.
+     *
+     * ```js
+     * var foo = base.getApp('foo');
+     * foo.extendApp(app);
+     * ```
+     * @name .extendApp
+     * @param {Object} `app`
+     * @return {Object} Returns the instance for chaining.
+     * @api public
+     */
+
+    proto[method('extend')] = function(app) {
+      if (typeof this.fn !== 'function') {
+        throw new Error('base-runner expected `fn` to be a function');
+      }
+      this.fn.call(app, app, this.base, app.env || this.env);
+      return this;
+    };
+
+    /**
+     * Invoke app `fn` with the given `base` instance.
+     *
+     * ```js
+     * runner.invoke(app.fn, app);
+     * ```
+     * @name .invoke
+     * @param {Function} `fn` The app function.
+     * @param {Object} `app` The "base" instance to use with the app.
+     * @return {Object}
+     * @api public
+     */
+
+    proto.invoke = function(fn) {
+      var app = new this.constructor();
+      app.fn = fn;
+      fn.call(app, app, this.base, this.env);
+      return app;
+    };
+
+    /**
+     * Get the `base` instance
+     */
+
+    Object.defineProperty(proto, 'base', {
+      get: function() {
+        return this.parent ? this.parent.base : this;
+      }
     });
+
   };
-
-  /**
-   * Load an object of middleware functions.
-   */
-
-  Runner.prototype.loadMiddleware = function(fns) {
-    for (var fn in fns) this.invoke(fns[fn]);
-  };
-
-  /**
-   * Load an object of tasks.
-   */
-
-  Runner.prototype.loadTasks = function(tasks) {
-    for (var key in tasks) {
-      this.task(key, this.invoke(tasks[key]));
-    }
-  };
-
-  /**
-   * Call the given `fn` in the context if the current instance,
-   * passing the instance, the `base` instance, and `env` as
-   * arguments to `fn`.
-   *
-   * @param {Function} `fn`
-   * @return {Object} Returns the instance, for chaining.
-   */
-
-  Runner.prototype.invoke = function(fn) {
-    var App = this.Ctor;
-    var app = this;
-    if (App && App.prototype.register) {
-      app = new App();
-    }
-    fn.call(this, app, this.base, this.env);
-    return this;
-  };
-
-  /**
-   * Run task(s) or applications and their task(s), calling the `callback`
-   * function when the tasks are complete.
-   *
-   * ```js
-   * // run tasks
-   * app.task('foo', function() {});
-   * app.build(['foo'], function(err) {
-   *   // foo is complete!
-   * });
-   *
-   * // run generators and their tasks
-   * app.register('one', function(one) {
-   *   one.task('foo', function() {});
-   *   one.task('bar', function() {});
-   * });
-   * app.build('one', function(err) {
-   *   // one is complete!
-   * });
-   *
-   * // run a specific generator-task
-   * app.register('one', function(one) {
-   *   one.task('foo', function() {});
-   *   one.task('bar', function() {});
-   * });
-   * app.build('one:bar', function(err) {
-   *   // one:bar is complete!
-   * });
-   * ```
-   * @param {String|Array|Object} `tasks`
-   * @param {Function} `cb`
-   * @return {Object} returns the instance for chaining
-   * @api public
-   */
-
-  Runner.prototype.build = function(tasks, done) {
-    tasks = toTasks(tasks, this, plural);
-    utils.async.each(tasks, function(ele, cb) {
-      utils.async.eachOf(ele, function(list, name, next) {
-        var app = this[method](name);
-        this.emit('build', name, app);
-        proto.build.call(app, list, next);
-      }.bind(this), cb);
-    }.bind(this), done);
-    return this;
-  };
-
-  /**
-   * Add a leaf to the task-runner tree.
-   *
-   * @param {String} `name`
-   * @param {Array} `tasks`
-   */
-
-  Runner.prototype.leaf = function(name, tasks) {
-    this.tree = this.tree || {};
-    if (name && tasks) {
-      this.tree[name] = Object.keys(tasks);
-    }
-  };
-
-  /**
-   * Get the depth of the current instance. This provides a quick
-   * insight into how many levels of nesting there are between
-   * the `base` instance and the current application.
-   *
-   * ```js
-   * console.log(this.depth);
-   * //= 1
-   * ```
-   * @name .depth
-   * @param {getter} Getter only
-   * @return {Number}
-   * @api public
-   */
-
-  utils.define(Runner.prototype, 'depth', {
-    get: function() {
-      return this.parent ? this.parent.depth + 1 : 0;
-    }
-  });
-
-  /**
-   * Gets the `base` instance, which is the first instance created.
-   *
-   * ```js
-   * var base = this.base;
-   * ```
-   * @name .base
-   * @param {getter} Getter only
-   * @return {Object} The `base` instance
-   * @api public
-   */
-
-  utils.define(Runner.prototype, 'base', {
-    get: function() {
-      return this.parent ? this.parent.base : this;
-    }
-  });
-
-  return Runner;
-};
+}
 
 /**
- * Expose `create`
+ * Expose `runner`
  */
 
-module.exports = create;
+module.exports = runner;
