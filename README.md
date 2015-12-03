@@ -1,18 +1,6 @@
-# base-runner [![NPM version](https://badge.fury.io/js/base-runner.svg)](http://badge.fury.io/js/base-runner)  [![Build Status](https://travis-ci.org/jonschlinkert/base-runner.svg)](https://travis-ci.org/jonschlinkert/base-runner)
+# base-runner [![NPM version](https://badge.fury.io/js/base-runner.svg)](http://badge.fury.io/js/base-runner)
 
 > Orchestrate multiple instances of base-methods at once.
-
-- [Install](#install)
-- [Usage](#usage)
-- [API](#api)
-- [Related projects](#related-projects)
-- [About](#about)
-  * [What is this?](#what-is-this-)
-  * [What can I do with this?](#what-can-i-do-with-this-)
-- [Running tests](#running-tests)
-- [Contributing](#contributing)
-- [Author](#author)
-- [License](#license)
 
 ## Install
 
@@ -25,153 +13,143 @@ $ npm i base-runner --save
 ## Usage
 
 ```js
+var path = require('path');
 var runner = require('base-runner');
+var Generate = require('generate');
+
+Generate.mixin(runner('generate', 'generator'));
+
+var base = Generate.getConfig('generator.js')
+  .resolve('generate-*/generator.js', {
+    cwd: '@/'
+  })
+  .resolve('*/generator.js', {
+    cwd: path.join(__dirname, 'fixtures')
+  })
+  .resolve('generator.js', {
+    cwd: __dirname
+  });
 ```
 
 ## API
 
-### [create](index.js#L37)
+### [.getConfig](index.js#L48)
 
-Create a Runner application using the given `Base` constructor and `config`.
+Static method for getting the very first instance to be used as the `base` instance. The first instance will either be defined by the user, like in local `node_modules`, or a globally installed module that serves as a default/fallback.
 
 **Params**
 
-* `Base` **{Function}**: constructor function
-* `config` **{Object}**
-* `returns` **{Function}**
+* `filename` **{String}**: Then name of the config file to lookup.
+* `returns` **{Object}**: Returns the "base" instance.
 
 **Example**
 
 ```js
-var create = require('base-runner');
-var Runner = create(Generate, {
-  parent: 'Generate',
-  child: 'Generator',
-  appname: 'generate',
-  method: 'generator',
-  plural: 'generators',
-  configfile: 'generate.js',
-  initFn: function () {
-    this.isGenerate = true;
-    this.isGenerator = false;
-  },
-  inspectFn: function (obj) {
-    obj.isGenerate = this.isGenerate;
-    obj.isGenerator = this.isGenerator;
-    obj.generators = this.generators;
-  },
-});
+var base = Base.getConfig('generator.js');
 ```
 
-### [Runner](index.js#L69)
+### [.getTask](index.js#L102)
 
-Create an instance of Runner with the given `options`, and optionally a `parent` instance and `fn` to be invoked (for example, `fn` would be an updater or generator).
+Get task `name` from the `runner.tasks` object.
 
 **Params**
 
-* `options` **{Object}**
-* `parent` **{Object}**
-* `fn` **{Function}**
+* `name` **{String}**
+* `returns` **{Object}**
 
 **Example**
 
 ```js
-var create = require('base-runner');
-var Runner = create(Generate, {...});
-var app = new Runner();
+runner.getTask('abc');
+
+// get a task from app `foo`
+runner.getTask('foo:abc');
+
+// get a task from sub-app `foo.bar`
+runner.getTask('foo.bar:abc');
 ```
 
-### [.build](index.js#L199)
+### [.addApp](index.js#L162)
 
-Run task(s) or applications and their task(s), calling the `callback` function when the tasks are complete.
+Alias for `register`. Adds an `app` with the given `name`
+to the `runner.apps` object.
 
 **Params**
 
-* `tasks` **{String|Array|Object}**
-* `cb` **{Function}**
-* `returns` **{Object}**: returns the instance for chaining
+* `name` **{String}**: The name of the config object to register
+* `config` **{Object|Function}**: The config object or function
+
+### [.hasApp](index.js#L179)
+
+Return true if app `name` is registered. Dot-notation may be used to check for [sub-apps](#sub-apps).
+
+**Params**
+
+* `name` **{String}**
+* `returns` **{Boolean}**
 
 **Example**
 
 ```js
-// run tasks
-app.task('foo', function() {});
-app.build(['foo'], function(err) {
-  // foo is complete!
-});
-
-// run generators and their tasks
-app.register('one', function(one) {
-  one.task('foo', function() {});
-  one.task('bar', function() {});
-});
-app.build('one', function(err) {
-  // one is complete!
-});
-
-// run a specific generator-task
-app.register('one', function(one) {
-  one.task('foo', function() {});
-  one.task('bar', function() {});
-});
-app.build('one:bar', function(err) {
-  // one:bar is complete!
-});
+base.hasApp('foo.bar.baz');
 ```
 
-### [.depth](index.js#L301)
+### [.getApp](index.js#L202)
 
-Get the depth of the current instance. This provides a quick insight into how many levels of nesting there are between the `base` instance and the current application.
+Return app `name` is registered. Dot-notation may be used to get [sub-apps](#sub-apps).
 
 **Params**
 
-* **{getter}**: Getter only
-* `returns` **{Number}**
+* `name` **{String}**
+* `returns` **{Boolean}**
 
 **Example**
 
 ```js
-console.log(this.depth);
-//= 1
+base.getApp('foo');
+// or
+base.getApp('foo.bar.baz');
 ```
 
-### [.base](index.js#L319)
+### [.extendApp](index.js#L224)
 
-Gets the `base` instance, which is the first instance created.
+Extend an app.
 
 **Params**
 
-* **{getter}**: Getter only
-* `returns` **{Object}**: The `base` instance
+* `app` **{Object}**
+* `returns` **{Object}**: Returns the instance for chaining.
 
 **Example**
 
 ```js
-var base = this.base;
+var foo = base.getApp('foo');
+foo.extendApp(app);
+```
+
+### [.invoke](index.js#L245)
+
+Invoke app `fn` with the given `base` instance.
+
+**Params**
+
+* `fn` **{Function}**: The app function.
+* `app` **{Object}**: The "base" instance to use with the app.
+* `returns` **{Object}**
+
+**Example**
+
+```js
+runner.invoke(app.fn, app);
 ```
 
 ## Related projects
 
-[base-methods](https://www.npmjs.com/package/base-methods): Starter for creating a node.js application with a handful of common methods, like `set`, `get`,… [more](https://www.npmjs.com/package/base-methods) | [homepage](https://github.com/jonschlinkert/base-methods)
-
-## About
-
-### What is this?
-
-This is a plugin for [base-methods][] that registers, resolves, and orchestrates multiple application instances, from modules that are installed anywhere on your setup, locally or globally.
-
-### What can I do with this?
-
-**project generator**
-
-Create your own project generator, like [yeoman][]. This plugin can easily:
-
-* find, resolve and register generators using glob patterns (can be locally or globally installed npm modules)
-* initialize each one, passing the correct "parent" module as its invocation context
-* register (get and set) tasks on each generator
-* run the generators and their tasks programmaticaly or via the command line
-
-_(TBC)_
+* [base-methods](https://www.npmjs.com/package/base-methods): Starter for creating a node.js application with a handful of common methods, like `set`, `get`,… [more](https://www.npmjs.com/package/base-methods) | [homepage](https://github.com/jonschlinkert/base-methods)
+* [base-options](https://www.npmjs.com/package/base-options): Adds a few options methods to base-methods, like `option`, `enable` and `disable`. See the readme… [more](https://www.npmjs.com/package/base-options) | [homepage](https://github.com/jonschlinkert/base-options)
+* [base-plugins](https://www.npmjs.com/package/base-plugins): Upgrade's plugin support in base-methods to allow plugins to be called any time after init. | [homepage](https://github.com/jonschlinkert/base-plugins)
+* [base-resolver](https://www.npmjs.com/package/base-resolver): 'base-methods' plugin for resolving and loading globally installed npm modules. | [homepage](https://github.com/jonschlinkert/base-resolver)
+* [base-store](https://www.npmjs.com/package/base-store): Plugin for getting and persisting config values with your base-methods application. Adds a 'store' object… [more](https://www.npmjs.com/package/base-store) | [homepage](https://github.com/jonschlinkert/base-store)
 
 ## Running tests
 
@@ -183,7 +161,7 @@ $ npm i -d && npm test
 
 ## Contributing
 
-Pull requests and stars are always welcome. For bugs and feature requests, [please create an issue](/new).
+Pull requests and stars are always welcome. For bugs and feature requests, [please create an issue](https://github.com/jonschlinkert/base-runner/issues/new).
 
 ## Author
 
@@ -199,4 +177,4 @@ Released under the MIT license.
 
 ***
 
-_This file was generated by [verb-cli](https://github.com/assemble/verb-cli) on November 19, 2015._
+_This file was generated by [verb-cli](https://github.com/assemble/verb-cli) on December 03, 2015._
