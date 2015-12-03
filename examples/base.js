@@ -3,16 +3,13 @@
 console.time('resolver');
 var glob = require('matched');
 var gm = require('global-modules');
-var resolver = require('base-resolver');
 var Assemble = require('assemble-core');
 var runner = require('..');
 
 function Generate(options) {
-  Assemble.call(this);
-  this.options = options || {};
+  Assemble.apply(this, arguments);
   this.isGenerate = true;
   this.generators = {};
-  this.use(resolver('generate'));
 }
 Assemble.extend(Generate);
 
