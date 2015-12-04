@@ -84,7 +84,7 @@ function runner(moduleName, appName) {
 
     proto.initRunner = function(base) {
       var name = this.name = this.options.name || 'base';
-      this.env = {};
+      this.env = this.env || {};
 
       this[isName] = true;
       this[plural] = this[plural] || {};
@@ -171,9 +171,8 @@ function runner(moduleName, appName) {
 
     proto.register = function(name, app, base, env) {
       if (typeof app === 'function') {
-        app = this.invoke(app);
+        app = this.invoke(name, app, base, env);
       }
-
       app.define('parent', this);
       app.name = name;
       app.env = env;
@@ -264,27 +263,27 @@ function runner(moduleName, appName) {
     };
 
     /**
-     * Run one or more generators and the specified tasks for each.
+     * Run one or more apps and the specified tasks for each.
      *
      * ```js
-     * // run the default tasks for generators `foo` and `bar`
-     * generate.runGenerators(['foo', 'bar'], function(err) {
+     * // run the default tasks for apps `foo` and `bar`
+     * foo.runApps(['foo', 'bar'], function(err) {
      *   if (err) return console.log(err);
      *   console.log('done!');
      * });
      *
-     * // run the specified tasks for generators `foo` and `bar`
-     * var generators = {
+     * // run the specified tasks for apps `foo` and `bar`
+     * var apps = {
      *   foo: ['a', 'b', 'c'],
      *   bar: ['x', 'y', 'z']
      * };
      *
-     * generate.runGenerators(generators, function(err) {
+     * foo.runApps(apps, function(err) {
      *   if (err) return console.log(err);
      *   console.log('done!');
      * });
      * ```
-     * @param {Object} `generators`
+     * @param {Object} `apps`
      * @param {Function} `done`
      * @api public
      */
@@ -317,10 +316,12 @@ function runner(moduleName, appName) {
      * @api public
      */
 
-    proto.invoke = function(fn) {
+    proto.invoke = function(name, fn, base, env) {
       var app = new this.constructor();
+      app.name = name;
+      app.env = env;
       app.fn = fn;
-      fn.call(app, app, this.base, this.env);
+      fn.call(app, app, base, env);
       return app;
     };
 
