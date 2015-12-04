@@ -21,6 +21,9 @@ Generate.mixin(runner('generate', 'generator'));
 
 // console.time('getConfig');
 var app = Generate.getConfig('generator.js')
+  .resolve('**/generator.js', {
+    cwd: 'examples'
+  })
   .resolve('generate-*/generator.js', {
     cwd: gm
   });

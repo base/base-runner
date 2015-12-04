@@ -11,7 +11,7 @@ module.exports = function(app, base, env) {
   app.task('b', function() {});
   app.task('c', function() {});
 
-  app.register('foo', function(app) {
+  app.register('onefoo', function(app) {
     app.task('x', function() {});
     app.task('y', function() {});
     app.task('z', function() {});
