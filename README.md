@@ -69,7 +69,7 @@ runner.getTask('foo:abc');
 runner.getTask('foo.bar:abc');
 ```
 
-### [.addApp](index.js#L196)
+### [.addApp](index.js#L195)
 
 Alias for `register`. Adds an `app` with the given `name`
 to the `runner.apps` object.
@@ -79,7 +79,7 @@ to the `runner.apps` object.
 * `name` **{String}**: The name of the config object to register
 * `config` **{Object|Function}**: The config object or function
 
-### [.hasApp](index.js#L213)
+### [.hasApp](index.js#L212)
 
 Return true if app `name` is registered. Dot-notation may be used to check for [sub-apps](#sub-apps).
 
@@ -94,7 +94,7 @@ Return true if app `name` is registered. Dot-notation may be used to check for [
 base.hasApp('foo.bar.baz');
 ```
 
-### [.getApp](index.js#L236)
+### [.getApp](index.js#L235)
 
 Return app `name` is registered. Dot-notation may be used to get [sub-apps](#sub-apps).
 
@@ -111,7 +111,7 @@ base.getApp('foo');
 base.getApp('foo.bar.baz');
 ```
 
-### [.extendApp](index.js#L258)
+### [.extendApp](index.js#L257)
 
 Extend an app.
 
@@ -129,31 +129,31 @@ foo.extendApp(app);
 
 **Params**
 
-* `generators` **{Object}**
+* `apps` **{Object}**
 * `done` **{Function}**
 
 **Example**
 
 ```js
-// run the default tasks for generators `foo` and `bar`
-generate.runGenerators(['foo', 'bar'], function(err) {
+// run the default tasks for apps `foo` and `bar`
+foo.runApps(['foo', 'bar'], function(err) {
   if (err) return console.log(err);
   console.log('done!');
 });
 
-// run the specified tasks for generators `foo` and `bar`
-var generators = {
+// run the specified tasks for apps `foo` and `bar`
+var apps = {
   foo: ['a', 'b', 'c'],
   bar: ['x', 'y', 'z']
 };
 
-generate.runGenerators(generators, function(err) {
+foo.runApps(apps, function(err) {
   if (err) return console.log(err);
   console.log('done!');
 });
 ```
 
-### [.invoke](index.js#L320)
+### [.invoke](index.js#L319)
 
 Invoke app `fn` with the given `base` instance.
 
