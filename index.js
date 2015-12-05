@@ -7,6 +7,8 @@
 
 'use strict';
 
+var fs = require('fs');
+var path = require('path');
 var utils = require('./utils');
 
 /**
@@ -32,6 +34,13 @@ var utils = require('./utils');
  */
 
 function runner(moduleName, appName) {
+  if (typeof moduleName !== 'string') {
+    throw new TypeError('expected "moduleName" to be a string');
+  }
+  if (typeof appName !== 'string') {
+    throw new TypeError('expected "appName" to be a string');
+  }
+
   var toSingular = utils.inflection.singularize;
   var toPlural = utils.inflection.pluralize;
 
@@ -47,6 +56,9 @@ function runner(moduleName, appName) {
 
   return function plugin(proto) {
     var Ctor = proto.constructor;
+    if (proto instanceof Ctor) {
+      throw new Error('base-runner must be used as a mixin, not as an instance plugin.');
+    }
 
     /**
      * Static method for getting the very first instance to be used
@@ -64,13 +76,14 @@ function runner(moduleName, appName) {
      */
 
     Ctor.getConfig = function(filename, fallback) {
-      var base = utils.resolver.getConfig(filename, moduleName, {
+      var base = getConfig(filename, moduleName, {
         Ctor: Ctor,
         fallback: fallback,
         isModule: function(app) {
           return app[isName];
         }
       });
+
       base.initRunner(base);
       return base;
     };
@@ -82,12 +95,12 @@ function runner(moduleName, appName) {
      * @return {Object}
      */
 
-    proto.initRunner = function(base) {
+    proto.initRunner = function() {
       var name = this.name = this.options.name || 'base';
       this.env = this.env || {};
 
-      this[isName] = true;
       this[plural] = this[plural] || {};
+      this[isName] = true;
 
       this
         .use(utils.cli())
@@ -99,25 +112,46 @@ function runner(moduleName, appName) {
           }
         }));
 
-      // get the argv processing fns from the instance
-      // (both do very different things)
-      var processFn = this.cli.process;
-      var argvFn = this.processArgv;
-
-      this.cli.process = function(argv) {
-        var args = argvFn.call(base, argv);
-        processFn.call(base.cli, args);
-        base.set('env.argv', args);
-        return args;
-      };
-
-      this.on('config', function(env, mod) {
-        if (env.alias === moduleName) env.alias = 'base';
-        mod.path = mod.path || this.path;
-        this.register(env.alias, env.fn, this, env);
-      }.bind(this));
+      initListeners(this);
+      proxyArgv(this);
       return this;
     };
+
+    /**
+     * Ensure argv is parsed for the `base-cli` and
+     * `base-argv` plugins at the same time.
+     */
+
+    function proxyArgv(app) {
+      var processFn = app.cli.process;
+      var argvFn = app.processArgv;
+
+      app.cli.process = function(argv) {
+        var args = argvFn.call(app, argv);
+        processFn.call(app.cli, args);
+        app.set('env.argv', args);
+        return args;
+      };
+    }
+
+    /**
+     * Add a `config` listener to `app`, and register
+     * a `fn` each time a config is emitted
+     */
+
+    function initListeners(app) {
+      app.on('config', function(name, env) {
+        env.module.path = env.module.path || app.path;
+        var config = env.config;
+        var alias = config.alias;
+        var fn = config.fn;
+
+        if (alias === moduleName) {
+          alias = 'base';
+        }
+        app.register(alias, fn, app, env);
+      });
+    }
 
     /**
      * Get task `name` from the `runner.tasks` object.
@@ -170,13 +204,15 @@ function runner(moduleName, appName) {
      */
 
     proto.register = function(name, app, base, env) {
-      if (typeof app === 'function') {
-        app = this.invoke(name, app, base, env);
+      if (typeof this[plural] === 'undefined') {
+        var ctor = this.constructor.name;
+        throw new Error('object "' + plural + '" is not defined on ' + ctor);
       }
-      app.define('parent', this);
-      app.name = name;
-      app.env = app.env || env || this.env;
+      if (typeof app === 'undefined') {
+        throw new Error('expected ' + appName + ' to be a function or object');
+      }
 
+      app = this.invoke(name, app, base, env);
       this.emit('register', name, app);
       this[plural][name] = app;
       return this;
@@ -316,13 +352,21 @@ function runner(moduleName, appName) {
      * @api public
      */
 
-    proto.invoke = function(name, fn, base, env) {
-      var app = new this.constructor();
-      app.name = name;
-      app.env = env || this.env;
-      app.fn = fn;
+    proto.invoke = function(name, app, base, env) {
+      if (typeof app === 'function') {
+        var fn = app;
+        app = new this.constructor();
+        app.name = name;
+        app.env = env || this.env;
+        app.fn = fn;
+        fn.call(app, app, base || app.base, app.env);
+      } else {
+        // `parent` is used to get the base instance
+        app.name = name;
+        app.env = env || app.env || this.env;
+      }
 
-      fn.call(app, app, base || app.base, app.env);
+      app.define('parent', this);
       return app;
     };
 
@@ -331,6 +375,7 @@ function runner(moduleName, appName) {
      */
 
     Object.defineProperty(proto, 'base', {
+      configurable: true,
       get: function() {
         return this.parent ? this.parent.base : this;
       }
@@ -344,3 +389,100 @@ function runner(moduleName, appName) {
  */
 
 module.exports = runner;
+
+/**
+ * If necessary, this static method will resolve the _first instance_
+ * to be used as the `base` instance for caching any additional resolved configs.
+ *
+ * ```js
+ * var Generate = require('generate');
+ * var resolver = require('base-resolver');
+ *
+ * var generate = resolver.first('generator.js', 'generate', {
+ *   Ctor: Generate,
+ *   isModule: function(app) {
+ *     return app.isGenerate;
+ *   }
+ * });
+ * ```
+ * @param {String} `configfile` The name of the config file, ex: `assemblefile.js`
+ * @param {String} `moduleName` The name of the module to lookup, ex: `assemble`
+ * @param {Object} `options`
+ *   @option {Function} `options.isModule` Optionally pass a function that will be used to verify that the correct instance was created.
+ * @return {Object}
+ * @api public
+ */
+
+function getConfig(configfile, moduleName, options) {
+  var opts = utils.extend({ cwd: process.cwd() }, options);
+  var fp = path.resolve(opts.cwd, configfile);
+  var Ctor = opts.Ctor;
+
+  var Resolver = utils.resolver.Resolver;
+  var fallback = opts.fallback;
+
+  if (!utils.isAbsolute(fallback)) {
+    fallback = utils.resolveModule(opts.fallback);
+  }
+
+  if (typeof Ctor !== 'function') {
+    throw new TypeError('expected options.Ctor to be a function');
+  }
+
+  var validate = function() {
+    return false;
+  };
+
+  if (typeof opts.isModule === 'function') {
+    validate = opts.isModule;
+  }
+
+  // if a "configfile.js" is in the user's cwd, we'll try to
+  // require it in and use it to get (or create) the instance
+  if (fs.existsSync(fp)) {
+    var env = new Resolver.Config(fp, opts);
+    var mod = new Resolver.Mod(moduleName, env);
+
+    env.module = mod;
+    Ctor = mod.fn;
+
+    // `fn` is whatever the "configfile" returns
+    var fn = env.fn;
+
+    // if the "configfile" returns a function, we need to
+    // call the function, and pass an instance of our
+    // application to it
+    if (typeof fn === 'function') {
+      var app = new Ctor();
+      app.fn = fn;
+      app.env = env;
+
+      fn.call(app, app, app.base, env);
+
+      // set the `app` function on the instance, so it
+      // can be used to utils.extend other generators if needed
+      return app;
+    } else if (validate(fn)) {
+      // if the "configfile" returns an instance of our application
+      // we'll use that as our `base`
+      return fn;
+    }
+  }
+
+  // if we haven't resolved a user-specified config file by now,
+  // try the fallback dir, if passed on the options
+  if (fallback && fallback !== opts.cwd) {
+    opts.cwd = fallback;
+    var base = getConfig(configfile, moduleName, opts);
+    return base;
+  }
+
+  // create a new, bare instance as a last resort
+  return new Ctor();
+};
+
+/**
+ * Expose `getConfig`
+ */
+
+module.exports.getConfig = getConfig;

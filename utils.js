@@ -1,22 +1,12 @@
 'use strict';
 
+var path = require('path');
+
 /**
  * Module dependencies
  */
 
 var utils = require('lazy-cache')(require);
-
-/**
- * Temporarily re-assign `require` to trick browserify and
- * webpack into reconizing lazy dependencies.
- *
- * This tiny bit of ugliness has the huge dual advantage of
- * only loading modules that are actually called at some
- * point in the lifecycle of the application, whilst also
- * allowing browserify and webpack to find modules that
- * are depended on but never actually called.
- */
-
 var fn = require;
 require = utils;
 
@@ -34,14 +24,43 @@ require('base-cli', 'cli');
 require('extend-shallow', 'extend');
 require('pascalcase', 'pascal');
 require('isobject', 'isObject');
+require('global-modules', 'gm');
+require('resolve-dir');
+require('is-absolute');
 require('inflection');
+require('resolve');
 require('async');
+require = fn;
+
+utils.tryResolve = function(fp, cwd) {
+  try {
+    cwd = utils.resolveDir(cwd || process.cwd());
+    return utils.resolve.sync(fp, {basedir: cwd});
+  } catch (err) {}
+  return null;
+};
 
 /**
- * Restore `require`
+ * Resolve module the module to use from the given cwd.
+ *
+ * @param {String} `name`
+ * @return {String|Null}
  */
 
-require = fn;
+utils.resolveModule = function(name, cwd) {
+  if (typeof name === 'undefined') {
+    throw new TypeError('expected name to be a string');
+  }
+  name = utils.resolveDir(name);
+  if (cwd && path.basename(cwd) === name) {
+    var fp = utils.tryResolve(cwd);
+    if (fp) return fp;
+  }
+  var main = utils.tryResolve(name, cwd)
+    || utils.tryResolve(name, utils.gm);
+
+  return main ? path.dirname(main) : null;
+};
 
 /**
  * Expose `utils` modules
