@@ -32,10 +32,10 @@ var utils = require('./utils');
  */
 
 function runner(moduleName, appName) {
-  var toSingle = utils.inflection.singularize;
+  var toSingular = utils.inflection.singularize;
   var toPlural = utils.inflection.pluralize;
 
-  appName = toSingle(appName);
+  appName = toSingular(appName);
 
   // create property and method names
   var parent = utils.pascal(appName);
@@ -175,7 +175,7 @@ function runner(moduleName, appName) {
       }
       app.define('parent', this);
       app.name = name;
-      app.env = env;
+      app.env = app.env || env || this.env;
 
       this.emit('register', name, app);
       this[plural][name] = app;
@@ -319,9 +319,10 @@ function runner(moduleName, appName) {
     proto.invoke = function(name, fn, base, env) {
       var app = new this.constructor();
       app.name = name;
-      app.env = env;
+      app.env = env || this.env;
       app.fn = fn;
-      fn.call(app, app, base, env);
+
+      fn.call(app, app, base || app.base, app.env);
       return app;
     };
 
