@@ -416,10 +416,10 @@ module.exports = runner;
 function getConfig(configfile, moduleName, options) {
   var opts = utils.extend({ cwd: process.cwd() }, options);
   var fp = path.resolve(opts.cwd, configfile);
-  var Ctor = opts.Ctor;
 
-  var Resolver = utils.resolver.Resolver;
+  var createEnv = utils.resolver.Resolver.createEnv;
   var fallback = opts.fallback;
+  var Ctor = opts.Ctor;
 
   if (!utils.isAbsolute(fallback)) {
     fallback = utils.resolveModule(opts.fallback);
@@ -440,31 +440,24 @@ function getConfig(configfile, moduleName, options) {
   // if a "configfile.js" is in the user's cwd, we'll try to
   // require it in and use it to get (or create) the instance
   if (fs.existsSync(fp)) {
-    var env = new Resolver.Config(fp, opts);
-    var mod = new Resolver.Mod(moduleName, env);
-
-    env.module = mod;
-    Ctor = mod.fn;
+    opts.module = moduleName;
+    var env = createEnv(fp, opts.cwd, opts);
+    Ctor = env.module.fn;
 
     // `fn` is whatever the "configfile" returns
-    var fn = env.fn;
+    var fn = env.config.fn;
 
     // if the "configfile" returns a function, we need to
     // call the function, and pass an instance of our
     // application to it
     if (typeof fn === 'function') {
       var app = new Ctor();
-      app.fn = fn;
-      app.env = env;
+      return app.invoke('base', fn, app, env);
+    }
 
-      fn.call(app, app, app.base, env);
-
-      // set the `app` function on the instance, so it
-      // can be used to utils.extend other generators if needed
-      return app;
-    } else if (validate(fn)) {
-      // if the "configfile" returns an instance of our application
-      // we'll use that as our `base`
+    // Otherwise, if the "configfile" returns an instance
+    // of our application we'll use that as our `base`
+    if (validate(fn)) {
       return fn;
     }
   }
