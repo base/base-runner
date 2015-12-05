@@ -1,7 +1,7 @@
 {
   "name": "base-runner",
   "description": "Orchestrate multiple instances of base-methods at once.",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "homepage": "https://github.com/jonschlinkert/base-runner",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
   "repository": "jonschlinkert/base-runner",
@@ -24,7 +24,7 @@
     "async": "^1.5.0",
     "base-argv": "^0.3.0",
     "base-cli": "^0.4.0",
-    "base-resolver": "^0.2.1",
+    "base-resolver": "^0.3.0",
     "composer-runtimes": "^0.6.0",
     "extend-shallow": "^2.0.1",
     "global-modules": "^0.2.0",
