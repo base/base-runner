@@ -17,6 +17,7 @@ require = utils;
 // "base" plugins
 require('composer-runtimes', 'runtimes');
 require('base-resolver', 'resolver');
+require('base-config', 'config');
 require('base-argv', 'argv');
 require('base-cli', 'cli');
 

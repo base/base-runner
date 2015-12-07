@@ -33,7 +33,7 @@ var utils = require('./utils');
  * @return {Function}
  */
 
-function runner(moduleName, appName) {
+function runner(moduleName, appName, preload) {
   if (typeof moduleName !== 'string') {
     throw new TypeError('expected "moduleName" to be a string');
   }
@@ -56,6 +56,7 @@ function runner(moduleName, appName) {
 
   return function plugin(proto) {
     var Ctor = proto.constructor;
+
     if (proto instanceof Ctor) {
       throw new Error('base-runner must be used as a mixin, not as an instance plugin.');
     }
@@ -64,8 +65,13 @@ function runner(moduleName, appName) {
      * Ensure CLI and config plugins are loaded as early as possible
      */
 
-    Ctor.use(utils.config());
-    Ctor.use(utils.cli());
+    if (typeof proto.config !== 'function') {
+      Ctor.use(utils.config());
+    }
+
+    if (typeof proto.cli !== 'function') {
+      Ctor.use(utils.cli());
+    }
 
     /**
      * Static method for getting the very first instance to be used
@@ -85,7 +91,9 @@ function runner(moduleName, appName) {
     Ctor.getConfig = function(filename, fallback) {
       var base = getConfig(filename, moduleName, {
         Ctor: Ctor,
+        preload: preload,
         fallback: fallback,
+        appName: appName,
         isModule: function(app) {
           return app[isName];
         }
@@ -103,6 +111,8 @@ function runner(moduleName, appName) {
      */
 
     proto.initRunner = function() {
+      this.emit('plugin', 'runner', this);
+
       var name = this.name = this.options.name || 'base';
       this.env = this.env || {};
 
@@ -132,11 +142,14 @@ function runner(moduleName, appName) {
       var processFn = app.cli.process;
       var argvFn = app.processArgv;
 
-      app.cli.process = function(argv) {
+      app.cli.processArgv = function(argv) {
         var args = argvFn.call(app, argv);
-        app.set('env.argv', args);
+        utils.extend(args, args.commands);
+        utils.extend(args, args.options);
         processFn.call(app.cli, args);
-        return app;
+        app.set('env.argv', args);
+        app.emit('argv', args);
+        return args;
       };
     }
 
@@ -452,6 +465,13 @@ function getConfig(configfile, moduleName, options) {
     var env = createEnv(fp, opts.cwd, opts);
     Ctor = env.module.fn;
 
+    if (typeof Ctor.create === 'function' && typeof opts.preload === 'function') {
+      Ctor = Ctor.create(function(app, base, env) {
+        return opts.preload(app, base, env);
+      });
+      Ctor.mixin(runner(moduleName, opts.appName));
+    }
+
     // `fn` is whatever the "configfile" returns
     var fn = env.config.fn;
 
@@ -482,8 +502,3 @@ function getConfig(configfile, moduleName, options) {
   return new Ctor();
 };
 
-/**
- * Expose `getConfig`
- */
-
-module.exports.getConfig = getConfig;
