@@ -61,6 +61,13 @@ function runner(moduleName, appName) {
     }
 
     /**
+     * Ensure CLI and config plugins are loaded as early as possible
+     */
+
+    Ctor.use(utils.config());
+    Ctor.use(utils.cli());
+
+    /**
      * Static method for getting the very first instance to be used
      * as the `base` instance. The first instance will either be defined
      * by the user, like in local `node_modules`, or a globally installed
@@ -103,7 +110,6 @@ function runner(moduleName, appName) {
       this[isName] = true;
 
       this
-        .use(utils.cli())
         .use(utils.argv({prop: plural}))
         .use(utils.resolver(moduleName))
         .use(utils.runtimes({
@@ -128,9 +134,9 @@ function runner(moduleName, appName) {
 
       app.cli.process = function(argv) {
         var args = argvFn.call(app, argv);
-        processFn.call(app.cli, args);
         app.set('env.argv', args);
-        return args;
+        processFn.call(app.cli, args);
+        return app;
       };
     }
 
@@ -334,7 +340,9 @@ function runner(moduleName, appName) {
           if (!instance) {
             return cb(new Error('cannot find ' + appName + ' "' + name + '"'));
           }
-          return instance.build(tasks, cb);
+
+          instance.emit('prebuild', name, tasks, instance);
+          instance.build(tasks, cb);
         }.bind(this), cb);
       }.bind(this), done);
     };
