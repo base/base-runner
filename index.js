@@ -349,7 +349,7 @@ function runner(moduleName, appName, preload) {
       }
       utils.async.each(apps, function(app, cb) {
         utils.async.eachOf(app, function(tasks, name, next) {
-          var instance = this[plural][name] || this;
+          var instance = this[method('get')](name) || this;
           if (!instance) {
             return cb(new Error('cannot find ' + appName + ' "' + name + '"'));
           }
