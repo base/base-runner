@@ -145,7 +145,6 @@ function runner(moduleName, appName, preload) {
       app.cli.processArgv = function(argv) {
         var args = argvFn.call(app, argv);
         utils.extend(args, args.commands);
-        utils.extend(args, args.options);
         processFn.call(app.cli, args);
         app.set('env.argv', args);
         app.emit('argv', args);
@@ -169,6 +168,7 @@ function runner(moduleName, appName, preload) {
           alias = 'base';
         }
         app.register(alias, fn, app, env);
+        return app;
       });
     }
 
@@ -333,7 +333,7 @@ function runner(moduleName, appName, preload) {
      *   bar: ['x', 'y', 'z']
      * };
      *
-     * foo.runApps(apps, function(err) {
+     * base.runApps(apps, function(err) {
      *   if (err) return console.log(err);
      *   console.log('done!');
      * });
@@ -347,14 +347,16 @@ function runner(moduleName, appName, preload) {
       if (!Array.isArray(apps) || !utils.isObject(apps[0])) {
         apps = this.argv(apps)[plural];
       }
+
+      this.emit(toPlural(method('run')), apps, this);
+
       utils.async.each(apps, function(app, cb) {
         utils.async.eachOf(app, function(tasks, name, next) {
           var instance = this[method('get')](name) || this;
           if (!instance) {
             return cb(new Error('cannot find ' + appName + ' "' + name + '"'));
           }
-
-          instance.emit('prebuild', name, tasks, instance);
+          this.emit('prebuild', name, tasks, instance);
           instance.build(tasks, cb);
         }.bind(this), cb);
       }.bind(this), done);
