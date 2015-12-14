@@ -73,6 +73,19 @@ function runner(moduleName, appName, preload) {
       Ctor.use(utils.cli());
     }
 
+    if (typeof proto.runtimes !== 'function') {
+      Ctor.use(function() {
+        var name = this.name || this.options.name || 'base';
+
+        this.use(utils.runtimes({
+          displayName: function (key) {
+            return name !== key ? (name + ':' + key) : key;
+          }
+        }));
+      });
+    }
+
+
     /**
      * Static method for getting the very first instance to be used
      * as the `base` instance. The first instance will either be defined
@@ -95,7 +108,8 @@ function runner(moduleName, appName, preload) {
         fallback: fallback,
         appName: appName,
         isModule: function(app) {
-          return app[isName];
+          if (app) return app[isName];
+          throw new Error('verbfile.js should return an instance of verb or a function');
         }
       });
 
@@ -110,27 +124,19 @@ function runner(moduleName, appName, preload) {
      * @return {Object}
      */
 
-    proto.initRunner = function() {
-      this.emit('plugin', 'runner', this);
+    proto.initRunner = function(app) {
+      app.emit('plugin', 'runner', app);
+      app.env = app.env || {};
 
-      var name = this.name = this.options.name || 'base';
-      this.env = this.env || {};
+      app[plural] = app[plural] || {};
+      app[isName] = true;
 
-      this[plural] = this[plural] || {};
-      this[isName] = true;
-
-      this
+      app
         .use(utils.argv({prop: plural}))
         .use(utils.resolver(moduleName))
-        .use(utils.runtimes({
-          displayName: function(key) {
-            return name + ':' + key;
-          }
-        }));
 
-      initListeners(this);
-      proxyArgv(this);
-      return this;
+      initListeners(app);
+      proxyArgv(app);
     };
 
     /**
@@ -160,10 +166,8 @@ function runner(moduleName, appName, preload) {
     function initListeners(app) {
       app.on('config', function(name, env) {
         env.module.path = env.module.path || app.path;
-        var config = env.config;
-        var alias = config.alias;
-        var fn = config.fn;
-
+        var alias = env.config.alias;
+        var fn = env.config.fn;
         if (alias === moduleName) {
           alias = 'base';
         }
@@ -468,7 +472,7 @@ function getConfig(configfile, moduleName, options) {
     Ctor = env.module.fn;
 
     if (typeof Ctor.create === 'function' && typeof opts.preload === 'function') {
-      Ctor = Ctor.create(function(app, base, env) {
+      Ctor = Ctor.create(function(app, base) {
         return opts.preload(app, base, env);
       });
       Ctor.mixin(runner(moduleName, opts.appName));
@@ -496,8 +500,7 @@ function getConfig(configfile, moduleName, options) {
   // try the fallback dir, if passed on the options
   if (fallback && fallback !== opts.cwd) {
     opts.cwd = fallback;
-    var base = getConfig(configfile, moduleName, opts);
-    return base;
+    return getConfig(configfile, moduleName, opts);
   }
 
   // create a new, bare instance as a last resort
