@@ -54,7 +54,7 @@ function runner(moduleName, appName, preload) {
     return prop + parent;
   };
 
-  return function plugin(proto) {
+  return function runnerPlugin(proto) {
     var Ctor = proto.constructor;
 
     if (proto instanceof Ctor) {
@@ -84,7 +84,6 @@ function runner(moduleName, appName, preload) {
         }));
       });
     }
-
 
     /**
      * Static method for getting the very first instance to be used
@@ -124,19 +123,22 @@ function runner(moduleName, appName, preload) {
      * @return {Object}
      */
 
-    proto.initRunner = function(app) {
-      app.emit('plugin', 'runner', app);
-      app.env = app.env || {};
+    proto.initRunner = function() {
+      if (this.runnerInitialized) return;
+      this.runnerInitialized = true;
 
-      app[plural] = app[plural] || {};
-      app[isName] = true;
+      this.emit('plugin', 'runner', this);
+      this.env = this.env || {};
 
-      app
+      this[plural] = this[plural] || {};
+      this[isName] = true;
+
+      this
         .use(utils.argv({prop: plural}))
         .use(utils.resolver(moduleName))
 
-      initListeners(app);
-      proxyArgv(app);
+      initListeners(this);
+      proxyArgv(this);
     };
 
     /**
@@ -146,9 +148,9 @@ function runner(moduleName, appName, preload) {
 
     function proxyArgv(app) {
       var processFn = app.cli.process;
-      var argvFn = app.processArgv;
+      var argvFn = app.argv;
 
-      app.cli.processArgv = function(argv) {
+      app.cli.process = function(argv) {
         var args = argvFn.call(app, argv);
         utils.extend(args, args.commands);
         processFn.call(app.cli, args);
@@ -166,13 +168,14 @@ function runner(moduleName, appName, preload) {
     function initListeners(app) {
       app.on('config', function(name, env) {
         env.module.path = env.module.path || app.path;
-        var alias = env.config.alias;
-        var fn = env.config.fn;
+        var config = env.config;
+        var alias = config.alias;
+        var fn = config.fn;
+
         if (alias === moduleName) {
           alias = 'base';
         }
         app.register(alias, fn, app, env);
-        return app;
       });
     }
 
@@ -231,8 +234,8 @@ function runner(moduleName, appName, preload) {
         var ctor = this.constructor.name;
         throw new Error('object "' + plural + '" is not defined on ' + ctor);
       }
-      if (typeof app === 'undefined') {
-        throw new Error('expected ' + appName + ' to be a function or object');
+      if (!app) {
+        throw new Error('expected ' + app + ' to be a function or object');
       }
 
       app = this.invoke(name, app, base, env);
@@ -292,7 +295,6 @@ function runner(moduleName, appName, preload) {
      */
 
     proto[method('get')] = function(name) {
-      if (name === 'base') return this;
       if (this[plural].hasOwnProperty(name)) {
         return this[plural][name];
       }
@@ -317,7 +319,8 @@ function runner(moduleName, appName, preload) {
       if (typeof this.fn !== 'function') {
         throw new Error('base-runner expected `fn` to be a function');
       }
-      this.fn.call(app, app, this.base, app.env || this.env);
+
+      this.fn.call(app, app, this.base, this.env);
       return this;
     };
 
@@ -380,20 +383,24 @@ function runner(moduleName, appName, preload) {
      */
 
     proto.invoke = function(name, app, base, env) {
+      env = env || this.env;
       if (typeof app === 'function') {
         var fn = app;
-        app = new this.constructor();
-        app.name = name;
-        app.env = env || this.env;
+        app = new this.constructor({name: name});
         app.fn = fn;
+        init(app, this);
         fn.call(app, app, base || app.base, app.env);
       } else {
         // `parent` is used to get the base instance
-        app.name = name;
-        app.env = env || app.env || this.env;
+        init(app, this);
       }
 
-      app.define('parent', this);
+      function init(inst, parent) {
+        inst.name = name;
+        inst.env = env || inst.env;
+        inst.define('parent', parent);
+        inst.initRunner();
+      }
       return app;
     };
 
@@ -404,6 +411,7 @@ function runner(moduleName, appName, preload) {
     Object.defineProperty(proto, 'base', {
       configurable: true,
       get: function() {
+        this.calledParent = true;
         return this.parent ? this.parent.base : this;
       }
     });
@@ -444,6 +452,7 @@ function getConfig(configfile, moduleName, options) {
   var opts = utils.extend({ cwd: process.cwd() }, options);
   var fp = path.resolve(opts.cwd, configfile);
 
+  var User = utils.resolver.Resolver.User;
   var createEnv = utils.resolver.Resolver.createEnv;
   var fallback = opts.fallback;
   var Ctor = opts.Ctor;
@@ -486,6 +495,9 @@ function getConfig(configfile, moduleName, options) {
     // application to it
     if (typeof fn === 'function') {
       var app = new Ctor();
+      if (!env.user) {
+        env.user = new User(env.config.cwd);
+      }
       return app.invoke('base', fn, app, env);
     }
 
