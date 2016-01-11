@@ -51,8 +51,20 @@ describe('runner', function() {
     base = Generate.getConfig('generator.js', 'generate');
   });
 
+  it('should decorate a `getConfig` static method', function() {
+    assert.equal(typeof Generate.getConfig, 'function');
+  });
+
   it('should decorate a `resolve` method onto the instance', function() {
     assert.equal(typeof base.resolve, 'function');
+  });
+
+  it('should decorate a `getTask` method onto the instance', function() {
+    assert.equal(typeof base.getTask, 'function');
+  });
+
+  it('should decorate a `register` method onto the instance', function() {
+    assert.equal(typeof base.register, 'function');
   });
 
   it('should emit an `env` object for files that match the given pattern', function(cb) {
