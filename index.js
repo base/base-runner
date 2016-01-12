@@ -148,7 +148,7 @@ function runner(moduleName, appName, preload) {
 
     function proxyArgv(app) {
       var processFn = app.cli.process;
-      var argvFn = app.argv;
+      var argvFn = app.processArgv;
 
       app.cli.process = function(argv) {
         var args = argvFn.call(app, argv);
