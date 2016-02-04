@@ -96,7 +96,8 @@ function createArgs(app, options, argv) {
   return app.argv(argv, {
     whitelist: ['emit', 'cwd', 'file', 'f', 'verbose', 'v', 'config'],
     last: ['ask', 'tasks'],
-    first: ['emit']
+    first: ['emit'],
+    esc: ['file', 'f', 'cwd', 'path']
   });
 }
 
