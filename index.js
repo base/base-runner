@@ -9,6 +9,7 @@
 
 var path = require('path');
 var debug = require('debug')('base:runner');
+var plugins = require('./lib/plugins');
 var utils = require('./lib/utils');
 
 module.exports = function(options) {
@@ -16,17 +17,17 @@ module.exports = function(options) {
     if (this.isRegistered('base-runner')) return;
 
     // register plugins
-    this.use(utils.cwd());
-    this.use(utils.runtimes());
+    this.use(plugins.cwd());
+    this.use(plugins.runtimes());
 
     // Register lazily invoked plugins
-    this.lazy('project', utils.project);
-    this.lazy('pkg', utils.pkg);
-    this.lazy('cli', utils.cli);
-    this.lazy('argv', utils.argv);
+    this.lazy('project', plugins.project);
+    this.lazy('pkg', plugins.pkg);
+    this.lazy('cli', plugins.cli);
+    this.lazy('argv', plugins.argv);
     this.lazy('store', function() {
       return function() {
-        this.use(utils.store(this.constructor.name.toLowerCase()));
+        this.use(plugins.store(this.constructor.name.toLowerCase()));
 
         Object.defineProperty(this.store, 'local', {
           configurable: true,
@@ -101,11 +102,16 @@ function createArgs(app, options, argv) {
 
 function listen(app, options) {
   options = options || {};
+  app.on('option', function(key, val) {
+    if (key === 'cwd') console.log('using cwd "%s"', val);
+  });
+
   app.on('task:skipping', function() {
     if (!app.enabled('silent')) {
       console.error('no default task defined, skipping.');
     }
   });
+
   if (options.verbose) {
     app.on('error', function(err) {
       console.error(err);
