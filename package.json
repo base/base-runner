@@ -1,7 +1,7 @@
 {
   "name": "base-runner",
   "description": "Orchestrate multiple instances of base-methods at once.",
-  "version": "0.5.5",
+  "version": "0.5.6",
   "homepage": "https://github.com/jonschlinkert/base-runner",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
   "repository": "jonschlinkert/base-runner",
@@ -21,7 +21,7 @@
     "test": "mocha"
   },
   "dependencies": {
-    "base-argv": "^0.4.1",
+    "base-argv": "^0.4.2",
     "base-cli": "^0.4.3",
     "base-cwd": "^0.1.1",
     "base-pkg": "^0.1.0",
@@ -50,6 +50,7 @@
     "runner"
   ],
   "verb": {
+    "layout": "default",
     "related": {
       "list": [
         "base",
