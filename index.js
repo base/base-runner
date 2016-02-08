@@ -78,10 +78,19 @@ module.exports = function(options) {
       var file = resolveConfig(configfile, opts);
       var gen;
 
+      // if `default` is set, see if the user has stored preferences
+      if (opts.tasks && opts.tasks.length === 1 && opts.tasks[0] === 'default') {
+        var tasks = this.store.get('tasks');
+        if (tasks) {
+          opts.tasks = tasks.split(' ');
+        }
+      }
+
       if (file) {
         this.registerConfig('default', file);
         gen = this.getGenerator('default');
-      } else if (opts.tasks[0] !== 'default') {
+
+      } else if (opts.tasks && opts.tasks[0] !== 'default') {
         var first = opts.tasks[0].split(':').shift();
         gen = this.getGenerator(first);
 
