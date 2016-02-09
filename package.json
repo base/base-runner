@@ -23,6 +23,7 @@
   "dependencies": {
     "base-argv": "^0.4.2",
     "base-cli": "^0.4.3",
+    "base-config": "^0.4.0",
     "base-cwd": "^0.1.1",
     "base-pkg": "^0.1.0",
     "base-project": "^0.1.0",
@@ -30,9 +31,20 @@
     "base-store": "^0.3.6",
     "debug": "^2.2.0",
     "define-property": "^0.2.5",
+    "export-files": "^2.1.1",
     "extend-shallow": "^2.0.1",
+    "generator-util": "^0.2.5",
+    "get-value": "^2.0.3",
+    "has-glob": "^0.1.1",
+    "inflection": "^1.8.0",
+    "kind-of": "^3.0.2",
     "lazy-cache": "^1.0.3",
+    "map-schema": "^0.1.1",
+    "merge-settings": "^0.1.0",
     "minimist": "^1.2.0",
+    "mixin-deep": "^1.1.3",
+    "resolve-glob": "^0.1.8",
+    "set-value": "^0.3.3",
     "try-open": "^0.1.0"
   },
   "devDependencies": {
@@ -51,18 +63,21 @@
   ],
   "verb": {
     "layout": "default",
+    "tasks": [
+      "readme"
+    ],
+    "plugins": [
+      "gulp-format-md"
+    ],
     "related": {
       "list": [
         "base",
-        "base-tasks",
         "base-generators",
+        "base-options",
         "base-plugins",
         "base-store",
-        "base-options"
+        "base-tasks"
       ]
-    },
-    "plugins": [
-      "gulp-format-md"
-    ]
+    }
   }
 }

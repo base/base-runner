@@ -9,42 +9,20 @@
 
 var path = require('path');
 var debug = require('debug')('base:runner');
+var settings = require('./lib/settings');
 var plugins = require('./lib/plugins');
+var config = require('./lib/config');
 var utils = require('./lib/utils');
 
 module.exports = function(options) {
-  return function plugin(app) {
+  return function(app) {
     if (this.isRegistered('base-runner')) return;
-    if (!this.isApp) return;
 
-    // register plugins
-    this.use(plugins.cwd());
+    /**
+     * Initialize runner plugins
+     */
 
-    // Register lazily invoked plugins
-    this.lazy('project', plugins.project);
-    this.lazy('pkg', plugins.pkg);
-    this.lazy('cli', plugins.cli);
-    this.lazy('argv', plugins.argv);
-    this.lazy('store', function() {
-      return function() {
-        this.use(plugins.store(this.constructor.name.toLowerCase()));
-
-        Object.defineProperty(this.store, 'local', {
-          configurable: true,
-          set: function(v) {
-            // allow set to overwrite the property
-            utils.define(this, 'local', v);
-          },
-          get: function fn() {
-            // lazily create a namespaced store for the current project
-            if (fn.store) return fn.store;
-            fn.store = this.create();
-            fn.store.set(app.pkg.data);
-            return fn.store;
-          }
-        });
-      };
-    });
+    initPlugins(this);
 
     /**
      * Setup a CLI for running a base application.
@@ -67,17 +45,19 @@ module.exports = function(options) {
 
     this.define('runner', function(configfile, cb) {
       debug('runner args: "%j"', arguments);
+
+      // set the configfile to use
       this.option('configfile', configfile);
       this.configfile = configfile;
 
+      // process argv
       var args = createArgs(app, options, process.argv.slice(2));
-      this.set('cache.argv', args);
+      var opts = createOpts(app, args);
 
-      var opts = utils.extend({ cwd: this.cwd }, app.options, options, args);
-      opts.argv = args;
-
+      // listen for events
       listen(this, opts);
 
+      // if a configfile exists in the user's cwd, load it now
       var file = resolveConfig(configfile, opts);
       if (file) {
         this.registerConfig('default', file, opts);
@@ -88,10 +68,45 @@ module.exports = function(options) {
 
       cb.call(this, null, opts, this);
     });
-
-    return plugin;
   };
 };
+
+/**
+ * Create options to initialize with. This object is created by
+ * the `base-settings` plugin.
+ *
+ * @param {Object} `app`
+ * @param {Object} `args` processed argv object
+ * @return {Object}
+ */
+
+function createOpts(app, args) {
+  // temporarily delete tasks from args
+  var tasks = args.tasks;
+  delete args.tasks;
+
+  // load the user's configuration settings
+  var config = app.loadSettings(args);
+  var opts = config.merge();
+
+  opts.cwd = opts.cwd || app.cwd;
+  opts.tasks = opts.tasks || tasks;
+  opts.argv = args;
+  preprocess(opts);
+
+  app.set('cache.config', opts);
+  app.set('cache.argv', args);
+  return opts;
+}
+
+/**
+ * Returns the resolved absolute filepath to `configfile`, if one exists,
+ * in the user's working directory. Otherwise returns `undefined`.
+ *
+ * @param {String} `configfile`
+ * @param {String} `opts`
+ * @return {String|undefined}
+ */
 
 function resolveConfig(configfile, opts) {
   var configpath = path.resolve(opts.cwd, opts.file || opts.configfile || configfile);
@@ -100,20 +115,17 @@ function resolveConfig(configfile, opts) {
   }
 }
 
-// if `default` is set, see if the user has stored preferences
-function setDefaults(app, opts) {
-  var isDef = isDefault(opts);
+/**
+ * When only the `default` task is defined, this checks to see if
+ * the user has stored task preferences, and if so, uses those instead
+ * of `default`.
+ *
+ * @param {Object} `app`
+ * @param {Object} `opts`
+ */
 
-  var argv = opts.argv;
-  var keys = Object.keys(argv);
-  var len = keys.length - 1; // minus `tasks`
-
-  if (typeof argv.run === 'undefined' && len > 1) {
-    opts.tasks = null;
-    return;
-  }
-
-  if (isDef) {
+function setDefaults(app, opts, pkg) {
+  if (isDefault(opts)) {
     var tasks = app.store.get('tasks');
     if (tasks) {
       opts.tasks = tasks.split(' ');
@@ -121,27 +133,50 @@ function setDefaults(app, opts) {
   }
 }
 
+/**
+ * Returns true if (only) the `default` task is defined
+ *
+ * @param {Object} `opts`
+ * @return {Boolean}
+ */
+
 function isDefault(opts) {
   return opts.tasks
     && opts.tasks.length === 1
     && opts.tasks[0] === 'default';
 }
 
+/**
+ * Move certain properties onto `config` so they're processed
+ * by the config schema.
+ *
+ * @param {Object} `argv`
+ * @return {Object}
+ */
+
+function preprocess(argv) {
+  var keys = ['layout', 'toc', 'reflinks', 'related', 'plugins', 'helpers'];
+  var len = keys.length;
+  while (len--) {
+    var key = keys[len];
+    if (argv.hasOwnProperty(key)) {
+      utils.set(argv, ['config', key], argv[key]);
+      delete argv[key];
+    }
+  }
+}
+
+/**
+ * Create the `argv` object to use for application settings.
+ *
+ * @param {Object} `app`
+ * @param {Object} `options`
+ * @param {Object} `argv`
+ * @return {Object}
+ */
+
 function createArgs(app, options, argv) {
-  var fileKeys = [
-    'base',
-    'basename',
-    'cwd',
-    'dir',
-    'dirname',
-    'ext',
-    'extname',
-    'f',
-    'file',
-    'filename',
-    'path',
-    'root',
-    'stem',
+  var fileKeys = ['base', 'basename', 'cwd', 'dir', 'dirname', 'ext', 'extname', 'f', 'file', 'filename', 'path', 'root', 'stem'
   ];
 
   var alias = {
@@ -149,6 +184,8 @@ function createArgs(app, options, argv) {
     dirname: 'dir',
     extname: 'ext',
     verbose: 'v',
+    layout: 'l',
+    config: 'c',
     file: 'f'
   };
 
@@ -157,12 +194,57 @@ function createArgs(app, options, argv) {
   }
 
   return app.argv(argv, utils.extend({
-    whitelist: ['emit', 'config'].concat(fileKeys),
+    whitelist: ['emit'].concat(fileKeys),
     last: ['ask', 'tasks'],
     first: ['emit'],
     esc: fileKeys
   }, options));
 }
+
+/**
+ * Initialize runner plugins
+ *
+ * @param {Object} `app` base app instance
+ */
+
+function initPlugins(app) {
+  app.use(plugins.cwd());
+  app.use(settings());
+
+  // Register lazily invoked plugins
+  app.lazy('project', plugins.project);
+  app.lazy('pkg', plugins.pkg);
+  app.lazy('cli', plugins.cli);
+  app.lazy('config', config);
+  app.lazy('argv', plugins.argv);
+  app.lazy('store', function() {
+    return function() {
+      this.use(plugins.store(this.constructor.name.toLowerCase()));
+
+      Object.defineProperty(this.store, 'local', {
+        configurable: true,
+        set: function(v) {
+          // allow set to overwrite the property
+          utils.define(this, 'local', v);
+        },
+        get: function fn() {
+          // lazily create a namespaced store for the current project
+          if (fn.store) return fn.store;
+          fn.store = this.create();
+          fn.store.set(app.pkg.data);
+          return fn.store;
+        }
+      });
+    };
+  });
+}
+
+/**
+ * Listen for events on `app`
+ *
+ * @param {Object} app
+ * @param {Object} options
+ */
 
 function listen(app, options) {
   options = options || {};
@@ -185,14 +267,5 @@ function listen(app, options) {
     app.on('error', function(err) {
       console.error(err);
     });
-  }
-}
-
-function inflect(str, arr) {
-  var append = ' "' + arr.join(', ') + '"';
-  if (arr.length > 1) {
-    return str.split('(s)').join('s') + append;
-  } else {
-    return str.split('(s)').join('') + append;
   }
 }
