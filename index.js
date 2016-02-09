@@ -13,8 +13,9 @@ var plugins = require('./lib/plugins');
 var utils = require('./lib/utils');
 
 module.exports = function(options) {
-  return function(app) {
+  return function plugin(app) {
     if (this.isRegistered('base-runner')) return;
+    if (!this.isApp) return;
 
     // register plugins
     this.use(plugins.cwd());
@@ -73,40 +74,22 @@ module.exports = function(options) {
       this.set('cache.argv', args);
 
       var opts = utils.extend({ cwd: this.cwd }, app.options, options, args);
+      opts.argv = args;
+
       listen(this, opts);
 
       var file = resolveConfig(configfile, opts);
-      var gen;
-
-      // if `default` is set, see if the user has stored preferences
-      if (opts.tasks && opts.tasks.length === 1 && opts.tasks[0] === 'default') {
-        var tasks = this.store.get('tasks');
-        if (tasks) {
-          opts.tasks = tasks.split(' ');
-        }
-      }
-
       if (file) {
-        this.registerConfig('default', file);
-        gen = this.getGenerator('default');
-
-      } else if (opts.tasks && opts.tasks[0] !== 'default') {
-        var first = opts.tasks[0].split(':').shift();
-        gen = this.getGenerator(first);
-
+        this.registerConfig('default', file, opts);
+        this.hasConfigfile = true;
       } else {
-        gen = this.getGenerator('fallback');
-        this.register('default', gen);
+        setDefaults(this, opts);
       }
 
-      if (typeof gen === 'undefined') {
-        var msg = inflect('Can\'t find generator(s) or task(s)', opts.tasks);
-        console.error(msg);
-        process.exit(1);
-      }
-
-      cb.call(gen, null, opts, gen);
+      cb.call(this, null, opts, this);
     });
+
+    return plugin;
   };
 };
 
@@ -115,6 +98,33 @@ function resolveConfig(configfile, opts) {
   if (utils.exists(configpath)) {
     return configpath;
   }
+}
+
+// if `default` is set, see if the user has stored preferences
+function setDefaults(app, opts) {
+  var isDef = isDefault(opts);
+
+  var argv = opts.argv;
+  var keys = Object.keys(argv);
+  var len = keys.length - 1; // minus `tasks`
+
+  if (typeof argv.run === 'undefined' && len > 1) {
+    opts.tasks = null;
+    return;
+  }
+
+  if (isDef) {
+    var tasks = app.store.get('tasks');
+    if (tasks) {
+      opts.tasks = tasks.split(' ');
+    }
+  }
+}
+
+function isDefault(opts) {
+  return opts.tasks
+    && opts.tasks.length === 1
+    && opts.tasks[0] === 'default';
 }
 
 function createArgs(app, options, argv) {
@@ -156,12 +166,17 @@ function createArgs(app, options, argv) {
 
 function listen(app, options) {
   options = options || {};
+  var cwds = [app.cwd];
+
   app.on('option', function(key, val) {
-    if (key === 'cwd') console.log('using cwd "%s"', val);
+    if (key === 'cwd' && cwds[cwds.length - 1] !== val) {
+      console.log('changing cwd to "%s"', val);
+      cwds.push(val);
+    }
   });
 
   app.on('task:skipping', function() {
-    if (!app.enabled('silent')) {
+    if (app.disabled('silent')) {
       console.error('no default task defined, skipping.');
     }
   });
