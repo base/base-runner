@@ -90,16 +90,17 @@ function createOpts(app, args) {
 
   // load the user's configuration settings
   var config = app.loadSettings(args);
+  config.get('pkg');
   var opts = utils.omitEmpty(config.merge());
 
   opts.cwd = opts.cwd || app.cwd;
   opts.tasks = opts.tasks || tasks;
   args.tasks = opts.tasks;
   opts.argv = args;
-  // preprocess(opts);
 
   app.set('cache.config', opts);
   app.set('cache.argv', args);
+  app.option(opts);
   return opts;
 }
 
