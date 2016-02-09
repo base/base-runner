@@ -21,18 +21,20 @@
     "test": "mocha"
   },
   "dependencies": {
+    "arr-diff": "^2.0.0",
+    "array-union": "^1.0.1",
     "base-argv": "^0.4.2",
-    "base-cli": "^0.4.3",
+    "base-cli": "^0.4.9",
     "base-config": "^0.4.0",
     "base-cwd": "^0.1.1",
     "base-pkg": "^0.1.0",
     "base-project": "^0.1.0",
-    "base-runtimes": "^0.1.2",
     "base-store": "^0.3.6",
     "debug": "^2.2.0",
     "define-property": "^0.2.5",
     "export-files": "^2.1.1",
     "extend-shallow": "^2.0.1",
+    "falsey": "^0.3.0",
     "generator-util": "^0.2.5",
     "get-value": "^2.0.3",
     "has-glob": "^0.1.1",
@@ -50,20 +52,30 @@
     "try-open": "^0.1.0"
   },
   "devDependencies": {
-    "base": "^0.6.7",
+    "base": "^0.7.1",
     "base-task": "^0.4.0",
     "gulp": "^3.9.0",
     "gulp-eslint": "^1.1.1",
     "gulp-format-md": "^0.1.5",
     "gulp-istanbul": "^0.10.3",
     "gulp-mocha": "^2.2.0",
-    "mocha": "*"
+    "mocha": "*",
+    "through2": "^2.0.1"
   },
   "keywords": [
     "base",
     "runner"
   ],
+  "lintDeps": [
+    "test.js"
+  ],
   "verb": {
+    "tasks": [
+      "readme"
+    ],
+    "plugins": [
+      "gulp-format-md"
+    ],
     "related": {
       "list": [
         "base",
@@ -73,13 +85,6 @@
         "base-store",
         "base-tasks"
       ]
-    },
-    "layout": "default",
-    "tasks": [
-      "readme"
-    ],
-    "plugins": [
-      "gulp-format-md"
-    ]
+    }
   }
 }
