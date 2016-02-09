@@ -14,7 +14,7 @@ var plugins = require('./lib/plugins');
 var config = require('./lib/config');
 var utils = require('./lib/utils');
 
-module.exports = function(options) {
+module.exports = function(config) {
   return function(app) {
     if (this.isRegistered('base-runner')) return;
 
@@ -50,26 +50,75 @@ module.exports = function(options) {
       this.option('configfile', configfile);
       this.configfile = configfile;
 
-      // process argv
-      var args = createArgs(app, options, process.argv.slice(2));
-      var opts = createOpts(app, utils.omitEmpty(args));
+      try {
+        var configOpts = utils.extend({}, config, this.options);
 
-      // listen for events
-      listen(this, opts);
+        // process argv
+        var args = createArgs(app, configOpts, process.argv.slice(2));
+        var opts = createOpts(app, configOpts, args);
 
-      // if a configfile exists in the user's cwd, load it now
-      var file = resolveConfig(configfile, opts);
-      if (file) {
-        this.registerConfig('default', file, opts);
-        this.hasConfigfile = true;
-      } else {
-        setDefaults(this, opts);
+        // listen for events
+        listen(this, opts);
+
+        // if a configfile exists in the user's cwd, load it now
+        var file = resolveConfig(configfile, opts);
+        if (file) {
+          this.registerConfig('default', file, opts);
+          this.hasConfigfile = true;
+        } else {
+          setDefaults(this, opts);
+        }
+      } catch (err) {
+        cb.call(this, err);
+        return;
       }
 
-      opts.argv = utils.omitEmpty(opts.argv);
-      this.base.set('cache.config', opts);
+      this.option(opts);
 
-      cb.call(this, null, opts, this);
+      var sortedArgs = this.sortArgs(opts, {
+        keys: this.cli.keys,
+        last: ['ask', 'tasks'],
+        first: ['emit', 'save']
+      });
+
+      app.base.set('cache.config', sortedArgs);
+
+      cb.call(this, null, sortedArgs, this);
+    });
+
+    /**
+     * Sort arguments so that `app.cli.process` executes commands
+     * in the order specified.
+     *
+     * @param {Object} `app` Application instance
+     * @param {Object} `argv` The expanded argv object
+     * @param {Object} `options`
+     * @param {Array} `options.first` The keys to run first.
+     * @param {Array} `options.last` The keys to run last.
+     * @return {Object} Returns the `argv` object with sorted keys.
+     */
+
+    this.define('sortArgs', function(argv, options) {
+      var opts = utils.extend({keys: []}, options);
+      var keys = opts.keys || [];
+      var first = opts.first || [];
+      var last = opts.last || [];
+
+      keys = utils.union(first, keys, Object.keys(argv));
+      keys = utils.diff(keys, last);
+      keys = utils.union(keys, last);
+
+      var len = keys.length;
+      var idx = -1;
+      var res = {};
+
+      while (++idx < len) {
+        var key = keys[idx];
+        if (argv.hasOwnProperty(key)) {
+          res[key] = argv[key];
+        }
+      }
+      return res;
     });
   };
 };
@@ -83,24 +132,30 @@ module.exports = function(options) {
  * @return {Object}
  */
 
-function createOpts(app, args) {
-  // temporarily delete tasks from args
+function createOpts(app, configOpts, args) {
   var tasks = args.tasks;
-  delete args.tasks;
+  var keys = Object.keys(args);
+  var len = keys.length;
+  if (tasks) len--;
+
+  // temporarily delete tasks from args
+  if (isDefaultTask(args)) {
+    delete args.tasks;
+  }
 
   // load the user's configuration settings
   var config = app.loadSettings(args);
-  config.get('pkg');
+  var pkg = config.get('pkg');
+
   var opts = utils.omitEmpty(config.merge());
+  opts = utils.extend({}, configOpts, opts);
 
   opts.cwd = opts.cwd || app.cwd;
-  opts.tasks = opts.tasks || tasks;
+  opts.tasks = args.tasks || opts.tasks || tasks;
+  if (len >= 1 && !opts.run) {
+    opts.tasks = null;
+  }
   args.tasks = opts.tasks;
-  opts.argv = args;
-
-  app.set('cache.config', opts);
-  app.set('cache.argv', args);
-  app.option(opts);
   return opts;
 }
 
@@ -130,7 +185,7 @@ function resolveConfig(configfile, opts) {
  */
 
 function setDefaults(app, opts, pkg) {
-  if (isDefault(opts)) {
+  if (isDefaultTask(opts)) {
     var tasks = app.store.get('tasks');
     if (tasks) {
       opts.tasks = tasks.split(' ');
@@ -145,7 +200,7 @@ function setDefaults(app, opts, pkg) {
  * @return {Boolean}
  */
 
-function isDefault(opts) {
+function isDefaultTask(opts) {
   return opts.tasks
     && opts.tasks.length === 1
     && opts.tasks[0] === 'default';
@@ -180,17 +235,12 @@ function preprocess(argv) {
  * @return {Object}
  */
 
-function createArgs(app, options, argv) {
-  var fileKeys = ['base', 'basename', 'cwd', 'dir', 'dirname', 'ext', 'extname', 'f', 'file', 'filename', 'path', 'root', 'stem'
-  ];
-
+function createArgs(app, configOpts, argv) {
   var alias = {
     filename: 'stem',
     dirname: 'dir',
     extname: 'ext',
     verbose: 'v',
-    layout: 'l',
-    config: 'c',
     file: 'f'
   };
 
@@ -198,12 +248,17 @@ function createArgs(app, options, argv) {
     argv = utils.minimist(argv, {alias: alias});
   }
 
+  var fileKeys = ['base', 'basename', 'cwd', 'dir',
+    'dirname', 'ext', 'extname', 'f', 'file', 'filename',
+    'path', 'root', 'stem'
+  ];
+
   return app.argv(argv, utils.extend({
     whitelist: ['emit'].concat(fileKeys),
     last: ['ask', 'tasks'],
-    first: ['emit'],
+    first: ['emit', 'save'],
     esc: fileKeys
-  }, options));
+  }, configOpts));
 }
 
 /**
@@ -224,7 +279,7 @@ function initPlugins(app) {
   app.lazy('argv', plugins.argv);
   app.lazy('store', function() {
     return function() {
-      this.use(plugins.store(this.constructor.name.toLowerCase()));
+      this.use(plugins.store(this._name));
 
       Object.defineProperty(this.store, 'local', {
         configurable: true,
@@ -274,3 +329,4 @@ function listen(app, options) {
     });
   }
 }
+
