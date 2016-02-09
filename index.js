@@ -52,7 +52,7 @@ module.exports = function(options) {
 
       // process argv
       var args = createArgs(app, options, process.argv.slice(2));
-      var opts = createOpts(app, args);
+      var opts = createOpts(app, utils.omitEmpty(args));
 
       // listen for events
       listen(this, opts);
@@ -65,6 +65,9 @@ module.exports = function(options) {
       } else {
         setDefaults(this, opts);
       }
+
+      opts.argv = utils.omitEmpty(opts.argv);
+      this.base.set('cache.config', opts);
 
       cb.call(this, null, opts, this);
     });
@@ -87,12 +90,13 @@ function createOpts(app, args) {
 
   // load the user's configuration settings
   var config = app.loadSettings(args);
-  var opts = config.merge();
+  var opts = utils.omitEmpty(config.merge());
 
   opts.cwd = opts.cwd || app.cwd;
   opts.tasks = opts.tasks || tasks;
+  args.tasks = opts.tasks;
   opts.argv = args;
-  preprocess(opts);
+  // preprocess(opts);
 
   app.set('cache.config', opts);
   app.set('cache.argv', args);
