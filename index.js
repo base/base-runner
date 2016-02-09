@@ -14,16 +14,14 @@ var plugins = require('./lib/plugins');
 var config = require('./lib/config');
 var utils = require('./lib/utils');
 
-/**
- * Run tasks and generators based on the user's configuration
- * settings, command line options and environment.
- */
-
 module.exports = function(options) {
   return function(app) {
     if (this.isRegistered('base-runner')) return;
 
-    // Initialize runner plugins
+    /**
+     * Initialize runner plugins
+     */
+
     initPlugins(this);
 
     /**
@@ -54,17 +52,10 @@ module.exports = function(options) {
 
       // process argv
       var args = createArgs(app, options, process.argv.slice(2));
-      var name = (this.base && this.base.name) || this.constructor.name.toLowerCase();
-
-      var opts = this.pkg.get(name);
-      opts.argv = args;
-      opts.cwd = args.cwd || opts.cwd || this.cwd;
-
-      // var opts = createOpts(app, args);
+      var opts = createOpts(app, utils.omitEmpty(args));
 
       // listen for events
       listen(this, opts);
-      this.base.set('cache.config', opts);
 
       // if a configfile exists in the user's cwd, load it now
       var file = resolveConfig(configfile, opts);
@@ -74,6 +65,9 @@ module.exports = function(options) {
       } else {
         setDefaults(this, opts);
       }
+
+      opts.argv = utils.omitEmpty(opts.argv);
+      this.base.set('cache.config', opts);
 
       cb.call(this, null, opts, this);
     });
@@ -96,18 +90,16 @@ function createOpts(app, args) {
 
   // load the user's configuration settings
   var config = app.loadSettings(args);
-  var opts = config.merge();
-  // app.option(opts);
+  var opts = utils.omitEmpty(config.merge());
 
   opts.cwd = opts.cwd || app.cwd;
-  app.cwd = opts.cwd;
-
   opts.tasks = opts.tasks || tasks;
+  args.tasks = opts.tasks;
   opts.argv = args;
   // preprocess(opts);
 
-  app.base.set('cache.config', opts);
-  app.base.set('cache.argv', args);
+  app.set('cache.config', opts);
+  app.set('cache.argv', args);
   return opts;
 }
 
@@ -136,20 +128,11 @@ function resolveConfig(configfile, opts) {
  * @param {Object} `opts`
  */
 
-function setDefaults(app, opts) {
-  var argv = opts.argv;
-
-  if (isDefault(argv)) {
-    var name = app.base && app.base.constructor.name.toLowerCase();
-    var tasks = app.pkg.get([name, 'tasks']);
+function setDefaults(app, opts, pkg) {
+  if (isDefault(opts)) {
+    var tasks = app.store.get('tasks');
     if (tasks) {
-      argv.tasks = tasks;
-      return;
-    }
-
-    tasks = app.store.get('tasks');
-    if (tasks) {
-      argv.tasks = tasks.split(' ');
+      opts.tasks = tasks.split(' ');
     }
   }
 }
@@ -162,7 +145,7 @@ function setDefaults(app, opts) {
  */
 
 function isDefault(opts) {
-  return opts && opts.tasks
+  return opts.tasks
     && opts.tasks.length === 1
     && opts.tasks[0] === 'default';
 }
@@ -233,12 +216,11 @@ function initPlugins(app) {
   app.use(settings());
 
   // Register lazily invoked plugins
-  app.lazy('argv', plugins.argv);
+  app.lazy('project', plugins.project);
+  app.lazy('pkg', plugins.pkg);
   app.lazy('cli', plugins.cli);
   app.lazy('config', config);
-  app.lazy('pkg', plugins.pkg);
-  app.lazy('project', plugins.project);
-
+  app.lazy('argv', plugins.argv);
   app.lazy('store', function() {
     return function() {
       this.use(plugins.store(this.constructor.name.toLowerCase()));
