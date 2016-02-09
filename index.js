@@ -145,14 +145,12 @@ function createOpts(app, configOpts, args) {
 
   // load the user's configuration settings
   var config = app.loadSettings(args);
-  var pkg = config.get('pkg');
-
   var opts = utils.omitEmpty(config.merge());
   opts = utils.extend({}, configOpts, opts);
 
   opts.cwd = opts.cwd || app.cwd;
   opts.tasks = args.tasks || opts.tasks || tasks;
-  if (len >= 1 && !opts.run) {
+  if (len >= 1 && !opts.run && !isWhitelisted(opts)) {
     opts.tasks = null;
   }
   args.tasks = opts.tasks;
@@ -248,17 +246,20 @@ function createArgs(app, configOpts, argv) {
     argv = utils.minimist(argv, {alias: alias});
   }
 
-  var fileKeys = ['base', 'basename', 'cwd', 'dir',
-    'dirname', 'ext', 'extname', 'f', 'file', 'filename',
-    'path', 'root', 'stem'
-  ];
-
   return app.argv(argv, utils.extend({
-    whitelist: ['emit'].concat(fileKeys),
+    whitelist: utils.whitelist,
     last: ['ask', 'tasks'],
     first: ['emit', 'save'],
-    esc: fileKeys
+    esc: utils.fileKeys
   }, configOpts));
+}
+
+function isWhitelisted(argv) {
+  var keys = utils.whitelist;
+  for (var key in argv) {
+    if (~keys.indexOf(key)) return true;
+  }
+  return false;
 }
 
 /**
@@ -279,7 +280,7 @@ function initPlugins(app) {
   app.lazy('argv', plugins.argv);
   app.lazy('store', function() {
     return function() {
-      this.use(plugins.store(this._name));
+      this.use(plugins.store(this._name.toLowerCase()));
 
       Object.defineProperty(this.store, 'local', {
         configurable: true,
