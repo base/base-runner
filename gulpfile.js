@@ -6,22 +6,22 @@ var istanbul = require('gulp-istanbul');
 var eslint = require('gulp-eslint');
 var through = require('through2');
 
-var lint = ['index.js', 'utils.js', 'test.js'];
+var lib = ['*.js', 'lib/**/*.js'];
 
 gulp.task('coverage', function() {
-  return gulp.src(lint)
+  return gulp.src(lib)
     .pipe(istanbul())
     .pipe(istanbul.hookRequire());
 });
 
 gulp.task('mocha', ['coverage'], function() {
-  return gulp.src('test.js')
+  return gulp.src('test/*.js')
     .pipe(mocha({reporter: 'spec'}))
     .pipe(istanbul.writeReports());
 });
 
 gulp.task('eslint', function() {
-  return gulp.src(lint)
+  return gulp.src(['bin/*.js', 'test/*.js'].concat(lib))
     .pipe(eslint())
 });
 

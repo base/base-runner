@@ -6,7 +6,7 @@ var task = require('base-task');
 var Base = require('base');
 var base;
 
-var runner = require('./');
+var runner = require('..');
 
 describe('base-runner', function() {
   beforeEach(function() {
