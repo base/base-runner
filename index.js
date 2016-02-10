@@ -153,7 +153,9 @@ function createOpts(app, configOpts, args) {
   if (len >= 1 && !opts.run && !isWhitelisted(opts)) {
     opts.tasks = null;
   }
+
   args.tasks = opts.tasks;
+  app.isDefaultTask = isDefaultTask(args);
   return opts;
 }
 
