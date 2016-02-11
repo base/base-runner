@@ -150,6 +150,7 @@ function createOpts(app, configOpts, args) {
 
   opts.cwd = opts.cwd || app.cwd;
   opts.tasks = args.tasks || opts.tasks || tasks;
+
   if (len >= 1 && !opts.run && !isWhitelisted(opts)) {
     opts.tasks = null;
   }
