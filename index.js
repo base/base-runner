@@ -18,6 +18,10 @@ module.exports = function(config) {
   return function(app) {
     if (this.isRegistered('base-runner')) return;
 
+    if (!this.isRegistered('base-generators', false)) {
+      throw new Error('expected the base-generators plugin to be registered');
+    }
+
     /**
      * Initialize runner plugins
      */
@@ -46,8 +50,17 @@ module.exports = function(config) {
     this.define('runner', function(configfile, cb) {
       debug('runner args: "%j"', arguments);
 
+      if (typeof cb !== 'function') {
+        throw new TypeError('expected a callback function');
+      }
+
+      if (typeof configfile !== 'string') {
+        cb(new TypeError('expected configfile to be a string'));
+        return;
+      }
+
       // set the configfile to use
-      this.option('configfile', configfile);
+      this.options.configfile = configfile;
       this.configfile = configfile;
 
       try {
@@ -63,6 +76,11 @@ module.exports = function(config) {
         // if a configfile exists in the user's cwd, load it now
         var file = resolveConfig(configfile, opts);
         if (file) {
+          // show configfile path
+          var name = path.basename(configfile, path.extname(configfile));
+          utils.timestamp('using %s %s', name, utils.homeRelative(file));
+
+          // register the configfile as the "default" generator
           this.registerConfig('default', file, opts);
           this.hasConfigfile = true;
         } else {
@@ -73,14 +91,17 @@ module.exports = function(config) {
         return;
       }
 
-      this.option(opts);
+      // update options
+      this.options = utils.extend({}, this.options, opts);
 
+      // sort args to pass to base-cli
       var sortedArgs = this.sortArgs(opts, {
         keys: this.cli.keys,
         last: ['ask', 'tasks'],
         first: ['emit', 'save']
       });
 
+      // set sorted args on `cache.config`
       app.base.set('cache.config', sortedArgs);
 
       cb.call(this, null, sortedArgs, this);
