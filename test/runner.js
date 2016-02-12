@@ -1,90 +1,105 @@
 'use strict';
 
 require('mocha');
+var path = require('path');
 var assert = require('assert');
-var task = require('base-task');
+var generators = require('base-generators');
 var Base = require('base');
 var base;
 
 var runner = require('..');
 
-describe('base-runner', function() {
+describe('.runner', function() {
   beforeEach(function() {
     base = new Base();
+    base.use(generators());
     base.use(runner());
   });
 
-  describe('plugin', function() {
-    it('should export a function', function() {
-      assert.equal(typeof runner, 'function');
-    });
-
-    it('should register as a plugin', function() {
-      assert(base.registered.hasOwnProperty('base-runner'));
-    });
-
-    it('should expose a runner method', function() {
+  describe('methods', function() {
+    it('should expose a base.runner method', function() {
       assert.equal(typeof base.runner, 'function');
     });
-  });
 
-  describe('base.store', function() {
-    it('should expose an base.store object', function() {
-      assert.equal(typeof base.store, 'object');
-    });
-
-    it('should use the name of the app for the store', function() {
-      assert.equal(base.store.name, 'base');
-    });
-
-    it('should expose an base.store.local object', function() {
-      assert.equal(typeof base.store.local, 'object');
-    });
-
-    it('should set pkg.data on base.store.local.data', function() {
-      assert(base.store.local.data);
-      assert(base.store.local.data.name);
-      assert.equal(base.store.local.data.name, 'base-runner');
-    });
-
-    it('should allow base.store.local setter to be defined', function() {
-      base.store.local = {};
-      assert.deepEqual(base.store.local, {});
-    });
-
-    it('should set properties on base.store.local.data', function() {
-      base.store.local.set('a', 'b');
-      assert.equal(base.store.local.data.a, 'b');
+    it('should expose a base.sortArgs method', function() {
+      assert.equal(typeof base.sortArgs, 'function');
     });
   });
 
-  describe('base.pkg', function() {
-    it('should expose an base.pkg object', function() {
-      assert.equal(typeof base.pkg, 'object');
+  describe('configfile', function() {
+    it('should set the configfile on the instance', function(cb) {
+      base.runner('foofile.js', function(err, argv, app) {
+        assert(!err);
+        assert.equal(app.configfile, 'foofile.js');
+        cb();
+      });
     });
 
-    it('should expose an base.pkg.get method', function() {
-      assert.equal(base.pkg.get('name'), 'base-runner');
+    it('should set the configfile on instance options', function(cb) {
+      base.runner('foofile.js', function(err, argv, app) {
+        assert(!err);
+        assert.equal(app.options.configfile, 'foofile.js');
+        cb();
+      });
+    });
+
+    it('should set cwd on the instance', function(cb) {
+      base.cwd = __dirname + '/fixtures';
+      base.runner('foofile.js', function(err, argv, app) {
+        assert(!err);
+        assert.equal(app.cwd, base.cwd);
+        cb();
+      });
+    });
+
+    it('should resolve configpath from app.cwd and app.configfile', function(cb) {
+      base.cwd = __dirname + '/fixtures';
+      base.runner('foofile.js', function(err, argv, app) {
+        assert(!err);
+        assert.equal(app.configpath, path.resolve(__dirname, 'fixtures/foofile.js'));
+        cb();
+      });
     });
   });
 
-  describe('base.project', function() {
-    it('should expose an base.project getter/setter', function() {
-      assert.equal(typeof base.project, 'string');
-    });
-
-    it('should get the project name', function() {
-      assert.equal(base.project, 'base-runner');
+  describe('argv', function() {
+    it('should expose argv to app', function(cb) {
+      base.cwd = __dirname + '/fixtures';
+      base.runner('foofile.js', function(err, argv, app) {
+        assert(!err);
+        assert(argv);
+        assert.equal(argv.name, 'base-runner');
+        cb();
+      });
     });
   });
 
-  describe('base.cwd', function() {
-    it('should expose an base.cwd getter/setter', function() {
-      assert.equal(typeof base.cwd, 'string');
+  describe('errors', function() {
+    it('should error when base-generators is not registered first', function(cb) {
+      try {
+        base = new Base();
+        base.use(runner());
+      } catch (err) {
+        assert.equal(err.message, 'expected the base-generators plugin to be registered');
+        cb();
+      }
     });
 
-    it('should get the working directory', function() {
-      assert.equal(base.cwd, process.cwd());
+    it('should error when a config file is not passed', function(cb) {
+      base.runner(null, function(err, argv, app) {
+        assert(err);
+        assert.equal(err.message, 'expected configfile to be a string');
+        cb();
+      });
+    });
+
+    it('should error when a callback is not passed', function(cb) {
+      try {
+        base.runner('foo.js');
+      } catch (err) {
+        assert.equal(err.message, 'expected a callback function');
+        cb();
+      }
     });
   });
 });
