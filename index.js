@@ -22,6 +22,8 @@ module.exports = function(config) {
       throw new Error('expected the base-generators plugin to be registered');
     }
 
+    debug('initializing runner for "%s"', this._name);
+
     /**
      * Initialize runner plugins
      */
@@ -42,7 +44,7 @@ module.exports = function(config) {
      * });
      * ```
      * @param {String} `configfile` The name of the configfile to initialize with. For example, `generator.js`, `assemblefile.js`, `verbfile.js` etc.
-     * @param {Function} `callback` Callback that exposes `err`, `argv` and `app` as arguments. `argv` is pre-processed by [minimist][] then processed by [expand-args][]. The original `argv` array is exposed on `argv.orig`, and the object returned by minimist is exposed on `argv.minimist`. `app` is the resolved application instance to be used.
+     * @param {Function} `callback` Callback that exposes `err`, `argv` and `app` as arguments. `argv` is pre-processed by [minimist] then processed by [expand-args]. The original `argv` array is exposed on `argv.orig`, and the object returned by minimist is exposed on `argv.minimist`. `app` is the resolved application instance to be used.
      * @return {undefined}
      * @api public
      */
@@ -77,8 +79,9 @@ module.exports = function(config) {
         var file = resolveConfig(configfile, opts);
         if (file) {
           // show configfile path
-          var name = path.basename(configfile, path.extname(configfile));
-          utils.timestamp('using %s %s', name, utils.homeRelative(file));
+          this.configpath = file;
+          var fp = utils.green('~/' + utils.homeRelative(file));
+          utils.timestamp('using %s %s', this.configname, fp);
 
           // register the configfile as the "default" generator
           this.registerConfig('default', file, opts);
@@ -160,7 +163,7 @@ function createOpts(app, configOpts, args) {
   if (tasks) len--;
 
   // temporarily delete tasks from args
-  if (isDefaultTask(args)) {
+  if (utils.isDefaultTask(args)) {
     delete args.tasks;
   }
 
@@ -172,12 +175,12 @@ function createOpts(app, configOpts, args) {
   opts.cwd = opts.cwd || app.cwd;
   opts.tasks = args.tasks || opts.tasks || tasks;
 
-  if (len >= 1 && !opts.run && !isWhitelisted(opts)) {
+  if (len >= 1 && !opts.run && !utils.isWhitelisted(args)) {
     opts.tasks = null;
   }
 
   args.tasks = opts.tasks;
-  app.isDefaultTask = isDefaultTask(args);
+  app.isDefaultTask = utils.isDefaultTask(args);
   return opts;
 }
 
@@ -207,25 +210,12 @@ function resolveConfig(configfile, opts) {
  */
 
 function setDefaults(app, opts, pkg) {
-  if (isDefaultTask(opts)) {
+  if (utils.isDefaultTask(opts)) {
     var tasks = app.store.get('tasks');
     if (tasks) {
       opts.tasks = tasks.split(' ');
     }
   }
-}
-
-/**
- * Returns true if (only) the `default` task is defined
- *
- * @param {Object} `opts`
- * @return {Boolean}
- */
-
-function isDefaultTask(opts) {
-  return opts.tasks
-    && opts.tasks.length === 1
-    && opts.tasks[0] === 'default';
 }
 
 /**
@@ -278,14 +268,6 @@ function createArgs(app, configOpts, argv) {
   }, configOpts));
 }
 
-function isWhitelisted(argv) {
-  var keys = utils.whitelist;
-  for (var key in argv) {
-    if (~keys.indexOf(key)) return true;
-  }
-  return false;
-}
-
 /**
  * Initialize runner plugins
  *
@@ -316,7 +298,6 @@ function initPlugins(app) {
           // lazily create a namespaced store for the current project
           if (fn.store) return fn.store;
           fn.store = this.create();
-          fn.store.set(app.pkg.data);
           return fn.store;
         }
       });
@@ -336,22 +317,15 @@ function listen(app, options) {
   var cwds = [app.cwd];
 
   app.on('option', function(key, val) {
-    if (key === 'cwd' && cwds[cwds.length - 1] !== val) {
-      console.log('changing cwd to "%s"', val);
-      cwds.push(val);
+
+    if (key === 'cwd') {
+      val = path.resolve(val);
+
+      if (cwds[cwds.length - 1] !== val) {
+        var dir = utils.magenta('~/' + utils.homeRelative(val));
+        utils.timestamp('changing cwd to %s', cwd);
+        cwds.push(val);
+      }
     }
   });
-
-  app.on('task:skipping', function() {
-    if (app.disabled('silent')) {
-      console.error('no default task defined, skipping.');
-    }
-  });
-
-  if (options.verbose) {
-    app.on('error', function(err) {
-      console.error(err);
-    });
-  }
 }
-
