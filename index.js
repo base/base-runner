@@ -212,10 +212,23 @@ function resolveConfig(configfile, opts) {
 function setDefaults(app, opts, pkg) {
   if (utils.isDefaultTask(opts)) {
     var tasks = app.store.get('tasks');
-    if (tasks) {
+    if (typeof tasks === 'string') {
       opts.tasks = tasks.split(' ');
+    } else {
+      opts.tasks = arrayify(tasks);
     }
   }
+}
+
+/**
+ * Everything to array.
+ *
+ * @param  {Mixed} val
+ * @return {Array}
+ */
+
+function arrayify(val) {
+  return Array.isArray(val) ? val : [val];
 }
 
 /**
