@@ -194,7 +194,8 @@ function createOpts(app, configOpts, args) {
  */
 
 function resolveConfig(configfile, opts) {
-  var configpath = path.resolve(opts.cwd, opts.file || opts.configfile || configfile);
+  var cwd = typeof opts.cwd === 'string' ? opts.cwd : process.cwd();
+  var configpath = path.resolve(cwd, opts.file || opts.configfile || configfile);
   if (utils.exists(configpath)) {
     return configpath;
   }
