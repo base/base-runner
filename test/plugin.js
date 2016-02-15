@@ -2,7 +2,7 @@
 
 require('mocha');
 var assert = require('assert');
-var task = require('base-task');
+var generators = require('base-generators');
 var Base = require('base');
 var base;
 
@@ -11,6 +11,7 @@ var runner = require('..');
 describe('base-runner', function() {
   beforeEach(function() {
     base = new Base();
+    base.use(generators());
     base.use(runner());
   });
 
@@ -39,12 +40,6 @@ describe('base-runner', function() {
 
     it('should expose an base.store.local object', function() {
       assert.equal(typeof base.store.local, 'object');
-    });
-
-    it('should set pkg.data on base.store.local.data', function() {
-      assert(base.store.local.data);
-      assert(base.store.local.data.name);
-      assert.equal(base.store.local.data.name, 'base-runner');
     });
 
     it('should allow base.store.local setter to be defined', function() {

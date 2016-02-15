@@ -68,7 +68,7 @@ describe('.runner', function() {
       base.runner('foofile.js', function(err, argv, app) {
         assert(!err);
         assert(argv);
-        assert.equal(argv.name, 'base-runner');
+        assert.equal(argv.configfile, 'foofile.js');
         cb();
       });
     });
