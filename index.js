@@ -213,9 +213,11 @@ function resolveConfig(configfile, opts) {
 function setDefaults(app, opts, pkg) {
   if (utils.isDefaultTask(opts)) {
     var tasks = app.store.get('tasks');
+
     if (typeof tasks === 'string') {
       opts.tasks = tasks.split(' ');
-    } else {
+
+    } else if (tasks) {
       opts.tasks = arrayify(tasks);
     }
   }
