@@ -80,8 +80,11 @@ module.exports = function(config) {
         if (file) {
           // show configfile path
           this.configpath = file;
-          var fp = utils.green('~/' + utils.homeRelative(file));
-          utils.timestamp('using %s %s', this.configname, fp);
+
+          if (opts.tasks !== null) {
+            var fp = utils.green('~/' + utils.homeRelative(file));
+            utils.timestamp('using %s %s', this.configname, fp);
+          }
 
           // register the configfile as the "default" generator
           this.registerConfig('default', file, opts);
@@ -339,7 +342,7 @@ function listen(app, options) {
 
       if (cwds[cwds.length - 1] !== val) {
         var dir = utils.magenta('~/' + utils.homeRelative(val));
-        utils.timestamp('changing cwd to %s', cwd);
+        utils.timestamp('changing cwd to %s', dir);
         cwds.push(val);
       }
     }
