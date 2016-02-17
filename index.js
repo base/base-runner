@@ -49,8 +49,13 @@ module.exports = function(config) {
      * @api public
      */
 
-    this.define('runner', function(configfile, cb) {
+    this.define('runner', function(configfile, argv, cb) {
       debug('runner args: "%j"', arguments);
+
+      if (typeof argv === 'function') {
+        cb = argv;
+        argv = process.argv.slice(2);
+      }
 
       if (typeof cb !== 'function') {
         throw new TypeError('expected a callback function');
@@ -69,7 +74,7 @@ module.exports = function(config) {
         var configOpts = utils.extend({}, config, this.options);
 
         // process argv
-        var args = createArgs(app, configOpts, process.argv.slice(2));
+        var args = createArgs(app, configOpts, argv);
         if (args.config && args.config.init) {
           this.cli.process(args, function(err) {
             if (err) return cb(err);
