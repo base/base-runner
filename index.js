@@ -308,6 +308,7 @@ function initPlugins(app) {
       // create a local "sub-store" for the cwd
       Object.defineProperty(this.store, 'local', {
         configurable: true,
+        enumerable: true,
         set: function(val) {
           // allow set to overwrite the property
           utils.define(this, 'local', val);
