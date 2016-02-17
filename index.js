@@ -83,6 +83,7 @@ module.exports = function(config) {
           return;
         }
 
+        // merge processed argv with configuration settings from environment
         var opts = createOpts(app, configOpts, args);
 
         // listen for events
@@ -93,7 +94,6 @@ module.exports = function(config) {
         if (file) {
           // show configfile path
           this.configpath = file;
-
           if (opts.tasks !== null) {
             var fp = utils.green('~/' + utils.homeRelative(file));
             utils.timestamp(`using ${this.configname} ${fp}`);
@@ -106,6 +106,7 @@ module.exports = function(config) {
           setDefaults(this, opts);
         }
       } catch (err) {
+        err.message = 'base-runner#runner ' + err.message;
         cb.call(this, err);
         return;
       }
@@ -184,6 +185,7 @@ function createOpts(app, configOpts, args) {
   }
 
   // load the user's configuration settings
+  args = utils.omitEmpty(args);
   var config = app.loadSettings(args);
   var opts = utils.omitEmpty(config.merge());
   opts = utils.extend({}, configOpts, opts);
@@ -298,6 +300,10 @@ function createArgs(app, configOpts, argv) {
 function initPlugins(app) {
   app.use(plugins.cwd());
   app.use(settings());
+
+  if (!app.isRegistered('base-option', false)) {
+    app.use(plugins.option());
+  }
 
   // Register plugins to be lazily invoked
   app.lazy('project', plugins.project);

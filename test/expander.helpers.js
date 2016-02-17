@@ -15,7 +15,7 @@ describe('.field.helpers', function() {
     base.use(runner());
   });
 
-  describe('plugin', function() {
+  describe('field', function() {
     it('should export a function', function() {
       assert.equal(typeof runner, 'function');
     });
