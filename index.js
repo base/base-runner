@@ -22,7 +22,7 @@ module.exports = function(config) {
       throw new Error('expected the base-generators plugin to be registered');
     }
 
-    debug('initializing runner for "%s"', this._name);
+    debug(`initializing runner for ${this._name}`);
 
     /**
      * Initialize runner plugins
@@ -70,6 +70,14 @@ module.exports = function(config) {
 
         // process argv
         var args = createArgs(app, configOpts, process.argv.slice(2));
+        if (args.config && args.config.init) {
+          this.cli.process(args, function(err) {
+            if (err) return cb(err);
+            cb();
+          });
+          return;
+        }
+
         var opts = createOpts(app, configOpts, args);
 
         // listen for events
@@ -83,7 +91,7 @@ module.exports = function(config) {
 
           if (opts.tasks !== null) {
             var fp = utils.green('~/' + utils.homeRelative(file));
-            utils.timestamp('using %s %s', this.configname, fp);
+            utils.timestamp(`using ${this.configname} ${fp}`);
           }
 
           // register the configfile as the "default" generator
@@ -221,24 +229,13 @@ function setDefaults(app, opts, pkg) {
       opts.tasks = tasks.split(' ');
 
     } else if (tasks) {
-      opts.tasks = arrayify(tasks);
+      opts.tasks = utils.arrayify(tasks);
     }
   }
 }
 
 /**
- * Everything to array.
- *
- * @param  {Mixed} val
- * @return {Array}
- */
-
-function arrayify(val) {
-  return Array.isArray(val) ? val : [val];
-}
-
-/**
- * Move certain properties onto `config` so they're processed
+ * Move certain properties onto `config` so they're only processed
  * by the config schema.
  *
  * @param {Object} `argv`
@@ -297,21 +294,23 @@ function initPlugins(app) {
   app.use(plugins.cwd());
   app.use(settings());
 
-  // Register lazily invoked plugins
+  // Register plugins to be lazily invoked
   app.lazy('project', plugins.project);
   app.lazy('pkg', plugins.pkg);
   app.lazy('cli', plugins.cli);
   app.lazy('config', config);
   app.lazy('argv', plugins.argv);
+
   app.lazy('store', function() {
     return function() {
       this.use(plugins.store(this._name.toLowerCase()));
 
+      // create a local "sub-store" for the cwd
       Object.defineProperty(this.store, 'local', {
         configurable: true,
-        set: function(v) {
+        set: function(val) {
           // allow set to overwrite the property
-          utils.define(this, 'local', v);
+          utils.define(this, 'local', val);
         },
         get: function fn() {
           // lazily create a namespaced store for the current project
@@ -342,7 +341,7 @@ function listen(app, options) {
 
       if (cwds[cwds.length - 1] !== val) {
         var dir = utils.magenta('~/' + utils.homeRelative(val));
-        utils.timestamp('changing cwd to %s', dir);
+        utils.timestamp(`changing cwd to ${dir}`);
         cwds.push(val);
       }
     }
