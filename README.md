@@ -89,7 +89,7 @@ Merge data onto the `app.cache.data` object. If the [base-data](https://github.c
 
 **Example**
 
-```js
+```json
 {
   "name": "my-project",
   "verb": {
@@ -151,7 +151,7 @@ _(Modules must be locally installed and listed in `dependencies` or
 // register a glob of helpers
 {
   "verb": {
-    "helpers": ['foo/*.js']
+    "helpers": ["foo/*.js"]
   }
 }
 ```
@@ -162,7 +162,7 @@ Merge options onto the `app.options` object. If the [base-option](https://github
 
 **Example**
 
-```js
+```json
 {"verb": {"options": {"foo": "bar"}}}
 ```
 
@@ -175,7 +175,7 @@ _(Modules must be locally installed and listed in `dependencies` or
 
 **Example**
 
-```js
+```json
 {"verb": {"plugins": {"eslint": {"name": "gulp-eslint"}}}}
 ```
 
