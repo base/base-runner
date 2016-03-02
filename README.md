@@ -7,7 +7,7 @@
 Install with [npm](https://www.npmjs.com/):
 
 ```sh
-$ npm i base-runner --save
+$ npm install base-runner --save
 ```
 
 ## Usage
@@ -68,12 +68,151 @@ base.runner('verbfile.js', function(err, argv, app) {
 });
 ```
 
+### [.cwd](lib/config/cwd.js#L18)
+
+Set the current working directory.
+
+**Example**
+
+```json
+{
+  "name": "my-project",
+  "verb": {
+    "cwd": "foo/bar"
+  }
+}
+```
+
+### [.data](lib/config/data.js#L23)
+
+Merge data onto the `app.cache.data` object. If the [base-data](https://github.com/jonschlinkert/base-data) plugin is registered, this is the API-equivalent of calling `app.data()`.
+
+**Example**
+
+```js
+{
+  "name": "my-project",
+  "verb": {
+    "data": {
+      "foo": "bar"
+    }
+  }
+}
+```
+
+### [.engines](lib/config/engine.js#L12)
+
+Alias for [engines](#engines)
+
+### [.engines](lib/config/engines.js#L26)
+
+_(Requires [templates](https://github.com/jonschlinkert/templates), otherwise ignored)_
+
+Register engines to use for rendering templates. Object-keys are used
+for the engine name, and the value can either be the module name, or
+an options object with the module name defined on the `name` property.
+_(Modules must be locally installed and listed in `dependencies` or
+`devDependencies`)_.
+
+**Example**
+
+```json
+// module name
+{"verb": {"engines": {"*": "engine-base"}}}
+
+// options
+{"verb": {"engines": {"*": {"name": "engine-base"}}}}
+```
+
+### [.helpers](lib/config/helpers.js#L36)
+
+_(Requires [templates](https://github.com/jonschlinkert/templates), otherwise ignored)_
+
+Register helpers to use in templates. Value can be a string or
+array of module names, glob patterns, or file paths, or an object
+where each key is a filepath, glob or module name, and the value
+is an options object to pass to resolved helpers.
+_(Modules must be locally installed and listed in `dependencies` or
+`devDependencies`)_.
+
+**Example**
+
+```json
+// module names
+{
+  "verb": {
+    "helpers": {
+      "helper-foo": {},
+      "helper-bar": {}
+    }
+  }
+}
+
+// register a glob of helpers
+{
+  "verb": {
+    "helpers": ['foo/*.js']
+  }
+}
+```
+
+### [.options](lib/config/options.js#L16)
+
+Merge options onto the `app.options` object. If the [base-option](https://github.com/node-base/base-option) plugin is registered, this is the API-equivalent of calling `app.option()`.
+
+**Example**
+
+```js
+{"verb": {"options": {"foo": "bar"}}}
+```
+
+### [.plugins](lib/config/plugins.js#L19)
+
+Load pipeline plugins. Requires the [base-pipeline](https://github.com/jonschlinkert/base-pipeline) plugin to be registered.
+
+_(Modules must be locally installed and listed in `dependencies` or
+`devDependencies`)_.
+
+**Example**
+
+```js
+{"verb": {"plugins": {"eslint": {"name": "gulp-eslint"}}}}
+```
+
+### [.toc](lib/config/toc.js#L19)
+
+Enable or disable Table of Contents rendering, or pass options on the `verb` config object in `package.json`.
+
+**Example**
+
+```json
+{
+  "name": "my-project",
+  "verb": {
+    "toc": true
+  }
+}
+```
+
+### [.use](lib/config/use.js#L20)
+
+Define plugins to load. Value can be a string or array of module names.
+
+_(Modules must be locally installed and listed in `dependencies` or
+`devDependencies`)_.
+
+**Example**
+
+```json
+{"verb":  {"use": ["base-option", "base-data"]}}
+```
+
 ## Related projects
 
 * [base](https://www.npmjs.com/package/base): base is the foundation for creating modular, unit testable and highly pluggable node.js applications, starting… [more](https://www.npmjs.com/package/base) | [homepage](https://github.com/node-base/base)
 * [base-generators](https://www.npmjs.com/package/base-generators): Adds project-generator support to your `base` application. | [homepage](https://github.com/jonschlinkert/base-generators)
 * [base-options](https://www.npmjs.com/package/base-options): Adds a few options methods to base-methods, like `option`, `enable` and `disable`. See the readme… [more](https://www.npmjs.com/package/base-options) | [homepage](https://github.com/jonschlinkert/base-options)
-* [base-plugins](https://www.npmjs.com/package/base-plugins): Upgrade's plugin support in base-methods to allow plugins to be called any time after init. | [homepage](https://github.com/jonschlinkert/base-plugins)
+* [base-plugins](https://www.npmjs.com/package/base-plugins): Upgrade's plugin support in base applications to allow plugins to be called any time after… [more](https://www.npmjs.com/package/base-plugins) | [homepage](https://github.com/jonschlinkert/base-plugins)
 * [base-store](https://www.npmjs.com/package/base-store): Plugin for getting and persisting config values with your base-methods application. Adds a 'store' object… [more](https://www.npmjs.com/package/base-store) | [homepage](https://github.com/jonschlinkert/base-store)
 * [base-tasks](https://www.npmjs.com/package/base-tasks): base-methods plugin that provides a very thin wrapper around [https://github.com/jonschlinkert/composer](https://github.com/jonschlinkert/composer) for adding task methods to… [more](https://www.npmjs.com/package/base-tasks) | [homepage](https://github.com/jonschlinkert/base-tasks)
 
@@ -86,7 +225,7 @@ Pull requests and stars are always welcome. For bugs and feature requests, [plea
 Generate readme and API documentation with [verb](https://github.com/verbose/verb):
 
 ```sh
-$ npm i -d && npm run docs
+$ npm install verb && npm run docs
 ```
 
 Or, if [verb](https://github.com/verbose/verb) is installed globally:
@@ -100,7 +239,7 @@ $ verb
 Install dev dependencies:
 
 ```sh
-$ npm i -d && npm test
+$ npm install -d && npm test
 ```
 
 ## Author
@@ -117,4 +256,4 @@ Released under the [MIT license](https://github.com/jonschlinkert/base-runner/bl
 
 ***
 
-_This file was generated by [verb](https://github.com/verbose/verb), v0.9.0, on February 21, 2016._
+_This file was generated by [verb](https://github.com/verbose/verb), v0.9.0, on March 02, 2016._
