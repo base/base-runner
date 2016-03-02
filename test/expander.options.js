@@ -8,22 +8,19 @@ var base, app;
 
 var runner = require('..');
 
-describe('.config.cwd', function() {
+describe('.config.options', function() {
   beforeEach(function() {
     base = new Base();
     base.use(generators());
     base.use(runner());
   });
-
-  describe('cwd', function() {
-    it('should set a cwd on app', function(cb) {
-      base.on('cwd', function(val) {
-        assert.equal(val, process.cwd());
-        cb();
-      });
-
-      base.config.process({cwd: process.cwd()}, function(err) {
+  
+  describe('options', function() {
+    it('should merge options onto app.options', function(cb) {
+      base.runner('foofile.js', {aaa: 'bbb'}, function(err) {
         if (err) return cb(err);
+        assert.equal(base.options.aaa, 'bbb');
+        cb();
       });
     });
   });

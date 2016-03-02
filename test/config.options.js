@@ -8,30 +8,30 @@ var base, app;
 
 var runner = require('..');
 
-describe('.config.data', function() {
+describe('.config.options', function() {
   beforeEach(function() {
     base = new Base();
     base.use(generators());
     base.use(runner());
   });
   
-  describe('data', function() {
-    it('should merge data onto app.cache.data', function(cb) {
-      base.config.process({data: {a: 'b'}}, function(err) {
+  describe('options', function() {
+    it('should merge options onto app.options', function(cb) {
+      base.config.process({options: {a: 'b'}}, function(err) {
         if (err) return cb(err);
-        assert.equal(base.cache.data.a, 'b');
+        assert.equal(base.options.a, 'b');
         cb();
       });
     });
 
-    it('should emit `data`', function(cb) {
-      base.on('data', function(key, val) {
+    it('should emit `options`', function(cb) {
+      base.on('option', function(key, val) {
         assert.equal(key, 'a');
         assert.equal(val, 'b');
         cb();
       });
 
-      base.config.process({data: {a: 'b'}}, function(err) {
+      base.config.process({options: {a: 'b'}}, function(err) {
         if (err) return cb(err);
       });
     });

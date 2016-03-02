@@ -49,5 +49,4 @@ describe('.field.normalize', function() {
       cb();
     });
   });
-
 });

@@ -10,7 +10,7 @@ var lib = ['*.js', 'lib/**/*.js'];
 
 gulp.task('coverage', function() {
   return gulp.src(lib)
-    .pipe(istanbul())
+    .pipe(istanbul({includeUntested: true}))
     .pipe(istanbul.hookRequire());
 });
 

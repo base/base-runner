@@ -22,7 +22,7 @@ module.exports = function(config) {
       throw new Error('expected the base-generators plugin to be registered');
     }
 
-    debug(`initializing runner for ${this._name}`);
+    debug('initializing runner for "' + this._name + '"');
 
     /**
      * Initialize runner plugins
@@ -49,7 +49,7 @@ module.exports = function(config) {
      * @api public
      */
 
-    this.define('runner', function(configfile, argv, cb) {
+    this.define('runner', function runner(configfile, argv, cb) {
       debug('runner args: "%j"', arguments);
 
       if (typeof argv === 'function') {
@@ -75,13 +75,6 @@ module.exports = function(config) {
 
         // process argv
         var args = createArgs(app, configOpts, argv);
-        if (args.config && args.config.init) {
-          this.cli.process(args, function(err) {
-            if (err) return cb(err);
-            cb();
-          });
-          return;
-        }
 
         // merge processed argv with configuration settings from environment
         var opts = createOpts(app, configOpts, args);
@@ -96,7 +89,7 @@ module.exports = function(config) {
           this.configpath = file;
           if (opts.tasks !== null) {
             var fp = utils.green('~/' + utils.homeRelative(file));
-            utils.timestamp(`using ${this.configname} ${fp}`);
+            utils.timestamp('using ' + this.configname + ' ' + fp);
           }
 
           // register the configfile as the "default" generator
@@ -120,6 +113,10 @@ module.exports = function(config) {
         last: ['ask', 'tasks'],
         first: ['emit', 'save']
       });
+
+      // if (this.hasConfigfile === true && sortedArgs.tasks.indexOf('default') === -1) {
+      //   sortedArgs.tasks.unshift('default');
+      // }
 
       // set sorted args on `cache.config`
       app.base.set('cache.config', sortedArgs);
@@ -298,6 +295,7 @@ function createArgs(app, configOpts, argv) {
  */
 
 function initPlugins(app) {
+  app.use(plugins.logger());
   app.use(plugins.cwd());
   app.use(settings());
 
@@ -314,7 +312,7 @@ function initPlugins(app) {
 
   app.lazy('store', function() {
     return function() {
-      this.use(plugins.store(this._name.toLowerCase()));
+      this.use(plugins.store(this._name));
 
       // create a local "sub-store" for the cwd
       Object.defineProperty(this.store, 'local', {
