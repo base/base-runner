@@ -78,6 +78,8 @@
   ],
   "lintDeps": [],
   "verb": {
+    "run": true,
+    "toc": false,
     "layout": "default",
     "tasks": [
       "readme"
@@ -98,7 +100,14 @@
     "reflinks": [
       "verb",
       "minimist",
-      "expand-args"
-    ]
+      "expand-args",
+      "base-data",
+      "templates",
+      "base-option",
+      "base-pipeline"
+    ],
+    "lint": {
+      "reflinks": true
+    }
   }
 }
