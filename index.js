@@ -265,11 +265,14 @@ function preprocess(argv) {
 
 function createArgs(app, configOpts, argv) {
   var alias = {
-    global: 'g',
     filename: 'stem',
     dirname: 'dir',
     extname: 'ext',
+    version: 'V',
     verbose: 'v',
+    global: 'g',
+    config: 'c',
+    save: 's',
     file: 'f'
   };
 
@@ -279,8 +282,8 @@ function createArgs(app, configOpts, argv) {
 
   return app.argv(argv, utils.extend({
     whitelist: utils.whitelist,
+    first: ['emit', 'save', 'config', 'file'],
     last: ['ask', 'tasks'],
-    first: ['emit', 'save'],
     esc: utils.fileKeys
   }, configOpts));
 }
