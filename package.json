@@ -1,7 +1,7 @@
 {
   "name": "base-runner",
   "description": "Orchestrate multiple instances of base-methods at once.",
-  "version": "0.5.19",
+  "version": "0.5.20",
   "homepage": "https://github.com/jonschlinkert/base-runner",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
   "repository": "jonschlinkert/base-runner",
