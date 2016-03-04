@@ -114,10 +114,6 @@ module.exports = function(config) {
         first: ['emit', 'save']
       });
 
-      // if (this.hasConfigfile === true && sortedArgs.tasks.indexOf('default') === -1) {
-      //   sortedArgs.tasks.unshift('default');
-      // }
-
       // set sorted args on `cache.config`
       app.base.set('cache.config', sortedArgs);
 
