@@ -265,6 +265,7 @@ function preprocess(argv) {
 
 function createArgs(app, configOpts, argv) {
   var alias = {
+    global: 'g',
     filename: 'stem',
     dirname: 'dir',
     extname: 'ext',
