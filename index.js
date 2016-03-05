@@ -180,6 +180,8 @@ function createOpts(app, configOpts, args) {
   // load the user's configuration settings
   args = utils.omitEmpty(args);
   var config = app.loadSettings(args);
+
+  // merge settings (calls `schema.normalize()`)
   var opts = utils.omitEmpty(config.merge());
   opts = utils.extend({}, configOpts, opts);
 
@@ -295,7 +297,6 @@ function createArgs(app, configOpts, argv) {
  */
 
 function initPlugins(app) {
-  app.use(plugins.logger());
   app.use(plugins.cwd());
   app.use(settings());
 
