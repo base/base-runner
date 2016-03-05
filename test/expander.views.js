@@ -77,4 +77,23 @@ describe('.field.views', function() {
       cb();
     });
   });
+
+  it('should add views from an array of globs', function(cb) {
+    base.option('views', {
+      posts: ['test/fixtures/templates/*.txt']
+    });
+
+    base.option('renameKey', function(key, view) {
+      return view ? view.basename : path.basename(key);
+    });
+
+    base.runner('foo.js', function(err, argv, app) {
+      assert(!err);
+
+      assert(app.views.hasOwnProperty('posts'));
+      assert(app.views.posts.hasOwnProperty('a.txt'));
+      assert(app.views.posts.hasOwnProperty('b.txt'));
+      cb();
+    });
+  });
 });
