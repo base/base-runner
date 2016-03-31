@@ -68,7 +68,6 @@ module.exports = function(config) {
 
       // set the configfile to use
       this.options.configfile = configfile;
-      this.configfile = configfile;
 
       try {
         var configOpts = utils.extend({}, config, this.options);
@@ -78,12 +77,13 @@ module.exports = function(config) {
 
         // merge processed argv with configuration settings from environment
         var opts = createOpts(app, configOpts, args);
+        if (opts.cwd) this.cwd = opts.cwd;
 
         // listen for events
         listen(this, opts);
 
         // if a configfile exists in the user's cwd, load it now
-        var file = resolveConfig(configfile, opts);
+        var file = resolveConfig(this, configfile, opts);
         if (file) {
           // show configfile path
           this.configpath = file;
@@ -93,12 +93,16 @@ module.exports = function(config) {
           }
 
           // register the configfile as the "default" generator
-          this.registerConfig('default', file, opts);
+          // this.registerConfig('default', file, opts);
+          var generator = this.register('default', file, opts);
+          generator.parent = this;
+
           this.hasConfigfile = true;
         } else {
           setDefaults(this, opts);
         }
       } catch (err) {
+        console.log(err.stack)
         err.message = 'base-runner#runner ' + err.message;
         cb.call(this, err);
         return;
@@ -181,16 +185,17 @@ function createOpts(app, configOpts, args) {
   args = utils.omitEmpty(args);
   var config = app.loadSettings(args);
 
-  // merge settings (calls `schema.normalize()`)
-  var opts = utils.omitEmpty(config.merge());
+  // merge settings - calls `schema.normalize()`
+  var expand = utils.expand();
+  var opts = expand(utils.omitEmpty(config.merge()));
   opts = utils.extend({}, configOpts, opts);
 
   opts.cwd = opts.cwd || app.cwd;
   opts.tasks = args.tasks || opts.tasks || tasks;
 
-  if (len >= 1 && !opts.run && !utils.isWhitelisted(args)) {
-    opts.tasks = null;
-  }
+  // if (len >= 1 && !opts.run && !utils.isWhitelisted(args)) {
+  //   opts.tasks = null;
+  // }
 
   args.tasks = opts.tasks;
   app.isDefaultTask = utils.isDefaultTask(args);
@@ -206,9 +211,9 @@ function createOpts(app, configOpts, args) {
  * @return {String|undefined}
  */
 
-function resolveConfig(configfile, opts) {
-  var cwd = typeof opts.cwd === 'string' ? opts.cwd : process.cwd();
-  var configpath = path.resolve(cwd, opts.file || opts.configfile || configfile);
+function resolveConfig(app, configfile, opts) {
+  console.log(opts.cwd)
+  var configpath = path.resolve(app.cwd, opts.file || opts.configfile || configfile);
   if (utils.exists(configpath)) {
     return configpath;
   }
@@ -267,15 +272,15 @@ function preprocess(argv) {
 
 function createArgs(app, configOpts, argv) {
   var alias = {
-    filename: 'stem',
+    config: 'c',
     dirname: 'dir',
     extname: 'ext',
-    version: 'V',
-    verbose: 'v',
+    file: 'f',
+    filename: 'stem',
     global: 'g',
-    config: 'c',
     save: 's',
-    file: 'f'
+    verbose: 'v',
+    version: 'V'
   };
 
   if (Array.isArray(argv)) {
@@ -284,8 +289,8 @@ function createArgs(app, configOpts, argv) {
 
   return app.argv(argv, utils.extend({
     whitelist: utils.whitelist,
-    first: ['emit', 'save', 'config', 'file'],
-    last: ['ask', 'tasks'],
+    first: ['init', 'ask', 'emit', 'global', 'save', 'config', 'file'],
+    last: ['tasks'],
     esc: utils.fileKeys
   }, configOpts));
 }
@@ -297,6 +302,8 @@ function createArgs(app, configOpts, argv) {
  */
 
 function initPlugins(app) {
+  var expand = utils.expand();
+
   app.use(plugins.cwd());
   app.use(settings());
 
@@ -305,15 +312,17 @@ function initPlugins(app) {
   }
 
   // Register plugins to be lazily invoked
-  app.lazy('project', plugins.project);
-  app.lazy('pkg', plugins.pkg);
+  app.lazy('argv', plugins.argv);
   app.lazy('cli', plugins.cli);
   app.lazy('config', config);
-  app.lazy('argv', plugins.argv);
+  app.lazy('pkg', plugins.pkg);
+  app.pkg.data.verb = expand(app.pkg.data.verb);
 
+  app.lazy('project', plugins.project);
   app.lazy('store', function() {
     return function() {
       this.use(plugins.store(this._name));
+      var self = this;
 
       // create a local "sub-store" for the cwd
       Object.defineProperty(this.store, 'local', {
@@ -326,7 +335,8 @@ function initPlugins(app) {
         get: function fn() {
           // lazily create a namespaced store for the current project
           if (fn.store) return fn.store;
-          fn.store = this.create();
+          var name = self.pkg.get('name') || path.basename(process.cwd());
+          fn.store = this.create(name);
           return fn.store;
         }
       });
