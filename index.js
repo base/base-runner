@@ -11,7 +11,6 @@ var path = require('path');
 var debug = require('debug')('base:runner');
 var settings = require('./lib/settings');
 var plugins = require('./lib/plugins');
-var config = require('./lib/config');
 var utils = require('./lib/utils');
 
 module.exports = function(config) {
@@ -185,6 +184,7 @@ function createOpts(app, configOpts, args) {
   args = utils.omitEmpty(args);
   var config = app.loadSettings(args);
 
+
   // merge settings - calls `schema.normalize()`
   var expand = utils.expand();
   var opts = expand(utils.omitEmpty(config.merge()));
@@ -212,7 +212,6 @@ function createOpts(app, configOpts, args) {
  */
 
 function resolveConfig(app, configfile, opts) {
-  console.log(opts.cwd)
   var configpath = path.resolve(app.cwd, opts.file || opts.configfile || configfile);
   if (utils.exists(configpath)) {
     return configpath;
@@ -305,20 +304,16 @@ function initPlugins(app) {
   var expand = utils.expand();
 
   app.use(plugins.cwd());
+  app.use(plugins.project());
+  app.use(plugins.config());
   app.use(settings());
-
-  if (!app.isRegistered('base-option', false)) {
-    app.use(plugins.option());
-  }
 
   // Register plugins to be lazily invoked
   app.lazy('argv', plugins.argv);
   app.lazy('cli', plugins.cli);
-  app.lazy('config', config);
   app.lazy('pkg', plugins.pkg);
-  app.pkg.data.verb = expand(app.pkg.data.verb);
+  app.pkg.data.verb = expand(app.pkg.data.verb || {});
 
-  app.lazy('project', plugins.project);
   app.lazy('store', function() {
     return function() {
       this.use(plugins.store(this._name));
@@ -335,8 +330,7 @@ function initPlugins(app) {
         get: function fn() {
           // lazily create a namespaced store for the current project
           if (fn.store) return fn.store;
-          var name = self.pkg.get('name') || path.basename(process.cwd());
-          fn.store = this.create(name);
+          fn.store = this.create(self.project);
           return fn.store;
         }
       });

@@ -18,9 +18,8 @@ describe('.config.engine', function() {
 
   describe('engine', function() {
     it('should error when engine is not an object', function(cb) {
-      base.config.process({engine: 'engine-base'}, function(err) {
-        assert(err);
-        assert.equal(err.message, 'expected engine to be an object');
+      base.config.process({engine: 'engine-base'}, function(err, config) {
+        assert(config.engines.hasOwnProperty('base'));
         cb();
       });
     });

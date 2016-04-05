@@ -9,7 +9,7 @@ var base;
 
 var runner = require('..');
 
-describe('.field.normalize', function() {
+describe.only('.field.normalize', function() {
   beforeEach(function() {
     base = new Base();
     base.use(generators());
@@ -18,7 +18,7 @@ describe('.field.normalize', function() {
 
   it('should set the configfile on the instance', function(cb) {
     base.runner('foofile.js', function(err, argv, app) {
-      assert(!err);
+      if (err) return cb(err);
       assert.equal(app.configfile, 'foofile.js');
       cb();
     });
@@ -26,7 +26,7 @@ describe('.field.normalize', function() {
 
   it('should set the configfile on instance options', function(cb) {
     base.runner('foofile.js', function(err, argv, app) {
-      assert(!err);
+      if (err) return cb(err);
       assert.equal(app.options.configfile, 'foofile.js');
       cb();
     });
@@ -35,7 +35,7 @@ describe('.field.normalize', function() {
   it('should set cwd on the instance', function(cb) {
     base.cwd = __dirname + '/fixtures';
     base.runner('foofile.js', function(err, argv, app) {
-      assert(!err);
+      if (err) return cb(err);
       assert.equal(app.cwd, base.cwd);
       cb();
     });
@@ -44,7 +44,7 @@ describe('.field.normalize', function() {
   it('should resolve configpath from app.cwd and app.configfile', function(cb) {
     base.cwd = __dirname + '/fixtures';
     base.runner('foofile.js', function(err, argv, app) {
-      assert(!err);
+      if (err) return cb(err);
       assert.equal(app.configpath, path.resolve(__dirname, 'fixtures/foofile.js'));
       cb();
     });
