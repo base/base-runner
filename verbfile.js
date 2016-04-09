@@ -1,4 +1,7 @@
+'use strict';
 
-module.exports = function() {
-
-}
+module.exports = function(app) {
+  app.task('default', function(cb) {
+    cb();
+  });
+};

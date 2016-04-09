@@ -15,5 +15,4 @@ describe('.field.helpers', function() {
     base.use(runner());
   });
 
-
 });

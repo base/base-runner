@@ -11,7 +11,7 @@
   "license": "MIT",
   "files": [
     "index.js",
-    "lib/"
+    "utils.js"
   ],
   "main": "index.js",
   "engines": {
@@ -21,8 +21,8 @@
     "test": "mocha"
   },
   "dependencies": {
+    "base-cli": "^0.4.26",
     "base-runtimes": "^0.1.5",
-    "debug": "^2.2.0",
     "lazy-cache": "^1.0.3",
     "liftoff": "^2.2.1",
     "log-utils": "^0.1.0",
@@ -43,9 +43,9 @@
     "mocha": "^2.4.5"
   },
   "keywords": [
+    "base",
     "baseplugin",
     "plugin",
-    "base",
     "runner"
   ],
   "lintDeps": [],
@@ -70,13 +70,13 @@
       ]
     },
     "reflinks": [
-      "verb",
-      "minimist",
-      "expand-args",
       "base-data",
-      "templates",
       "base-option",
-      "base-pipeline"
+      "base-pipeline",
+      "expand-args",
+      "minimist",
+      "templates",
+      "verb"
     ],
     "lint": {
       "reflinks": true

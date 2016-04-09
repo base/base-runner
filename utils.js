@@ -2,11 +2,9 @@
 
 var fs = require('fs');
 var path = require('path');
-var debug = require('debug')('base:base-app:utils');
 var utils = require('lazy-cache')(require);
 var fn = require;
 require = utils; // eslint-disable-line
-var fileCache = {};
 
 /**
  * Utils
@@ -49,7 +47,6 @@ utils.renameKey = function(key, view) {
  */
 
 utils.homeRelative = function(filepath) {
-  debug('creating home relative path "%s"', filepath);
   if (!utils.isString(filepath)) {
     throw new TypeError('expected filepath to be a string');
   }
@@ -85,6 +82,12 @@ utils.logTimeDiff = function(argv) {
       utils.timestamp(msg, utils.color.magenta(time.end(name)));
     }
   };
+};
+
+utils.tryRequire = function(name) {
+  try {
+    return require(name);
+  } catch (err) {}
 };
 
 /**
