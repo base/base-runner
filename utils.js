@@ -73,15 +73,7 @@ utils.configPath = function(msg, filepath) {
 utils.timestamp = function() {
   var args = [].slice.call(arguments);
   args.unshift(utils.log.timestamp);
-  console.log.apply(console, args);
-};
-
-utils.logTimeDiff = function(argv) {
-  return function(time, name, msg) {
-    if (argv.times) {
-      utils.timestamp(msg, utils.color.magenta(time.end(name)));
-    }
-  };
+  console.error.apply(console, args);
 };
 
 utils.tryRequire = function(name) {

@@ -4,102 +4,116 @@ require('mocha');
 var path = require('path');
 var assert = require('assert');
 var generators = require('base-generators');
+var argv = require('minimist')(process.argv.slice(2));
 var Base = require('base');
 var base;
 
+var fixtures = path.resolve.bind(path, __dirname, 'fixtures');
 var runner = require('..');
+var config = {
+  name: 'foo',
+  cwd: fixtures(),
+  runner: require(fixtures('package.json')),
+  processTitle: 'foo',
+  moduleName: 'foo',
+  extensions: {
+    '.js': null
+  }
+};
 
 describe('.runner', function() {
+  var error = console.error;
+
   beforeEach(function() {
-    base = new Base();
-    base.use(generators());
-    base.use(runner());
+    // temporarily silence stderr
+    // console.error = function() {};
+    Base.use(function() {
+      this.isApp = true;
+    });
+    Base.use(generators());
   });
 
-  describe('methods', function() {
-    it('should expose a base.runner method', function() {
-      assert.equal(typeof base.runner, 'function');
-    });
-
-    it('should expose a base.sortArgs method', function() {
-      assert.equal(typeof base.sortArgs, 'function');
-    });
+  afterEach(function() {
+    // console.error = error;
   });
 
-  describe('configfile', function() {
-    it('should set the configfile on the instance', function(cb) {
-      base.runner('foofile.js', function(err, argv, app) {
-        assert(!err);
-        assert.equal(app.configfile, 'foofile.js');
+  describe('errors', function() {
+    it('should throw an error when a callback is not passed', function(cb) {
+      try {
+        runner();
+        cb(new Error('expected an error'));
+      } catch (err) {
+        assert.equal(err.message, 'expected a callback function');
+        cb();
+      }
+    });
+
+    it('should error when an options object is not passed', function(cb) {
+      runner(Base, {}, null, function(err, app, runnerContext) {
+        assert(err);
+        assert.equal(err.message, 'expected the third argument to be an options object');
         cb();
       });
     });
 
-    it('should set the configfile on instance options', function(cb) {
-      base.runner('foofile.js', function(err, argv, app) {
-        assert(!err);
-        assert.equal(app.options.configfile, 'foofile.js');
+    it('should error when a lift-off config object is not passed', function(cb) {
+      runner(Base, null, {}, function(err, app, runnerContext) {
+        assert(err);
+        assert.equal(err.message, 'expected the second argument to be a lift-off config object');
+        cb();
+      });
+    });
+
+    it('should error when a Base constructor is not passed', function(cb) {
+      runner(null, {}, {}, function(err, app, runnerContext) {
+        assert(err);
+        assert.equal(err.message, 'expected the first argument to be a Base constructor');
+        cb();
+      });
+    });
+  });
+
+  describe('...', function() {
+    it('should set "env" on app.cache.runnerContext', function(cb) {
+      runner(Base, config, argv, function(err, app, runnerContext) {
+        if (err) return cb(err);
+        assert(app.cache.runnerContext.env);
+        assert.equal(typeof app.cache.runnerContext.env, 'object');
+        cb();
+      });
+    });
+
+    it('should set "config" on app.cache.runnerContext', function(cb) {
+      runner(Base, config, argv, function(err, app, runnerContext) {
+        if (err) return cb(err);
+        assert(app.cache.runnerContext.config);
+        assert.equal(typeof app.cache.runnerContext.config, 'object');
+        cb();
+      });
+    });
+
+    it('should set the configFile on app.cache.runnerContext.env', function(cb) {
+      runner(Base, config, argv, function(err, app, runnerContext) {
+        if (err) return cb(err);
+        assert.equal(app.cache.runnerContext.env.configFile, 'foofile.js');
         cb();
       });
     });
 
     it('should set cwd on the instance', function(cb) {
-      base.cwd = __dirname + '/fixtures';
-      base.runner('foofile.js', function(err, argv, app) {
-        assert(!err);
-        assert.equal(app.cwd, base.cwd);
+      runner(Base, config, {cwd: fixtures()}, function(err, app, runnerContext) {
+        if (err) return cb(err);
+        assert.equal(app.cwd, fixtures());
         cb();
       });
     });
 
-    it('should resolve configpath from app.cwd and app.configfile', function(cb) {
-      base.cwd = __dirname + '/fixtures';
-      base.runner('foofile.js', function(err, argv, app) {
-        assert(!err);
-        assert.equal(app.configpath, path.resolve(__dirname, 'fixtures/foofile.js'));
+    it('should resolve configpath from app.cwd and app.configFile', function(cb) {
+      runner(Base, config, {cwd: fixtures()}, function(err, app, runnerContext) {
+        if (err) return cb(err);
+        assert.equal(app.cache.runnerContext.env.configPath, path.resolve(__dirname, 'fixtures/foofile.js'));
         cb();
       });
-    });
-  });
-
-  describe('argv', function() {
-    it('should expose argv to app', function(cb) {
-      base.cwd = __dirname + '/fixtures';
-      base.runner('foofile.js', function(err, argv, app) {
-        assert(!err);
-        assert(argv);
-        assert.equal(argv.configfile, 'foofile.js');
-        cb();
-      });
-    });
-  });
-
-  describe('errors', function() {
-    it('should error when base-generators is not registered first', function(cb) {
-      try {
-        base = new Base();
-        base.use(runner());
-      } catch (err) {
-        assert.equal(err.message, 'expected the base-generators plugin to be registered');
-        cb();
-      }
-    });
-
-    it('should error when a config file is not passed', function(cb) {
-      base.runner(null, function(err, argv, app) {
-        assert(err);
-        assert.equal(err.message, 'expected configfile to be a string');
-        cb();
-      });
-    });
-
-    it('should error when a callback is not passed', function(cb) {
-      try {
-        base.runner('foo.js');
-      } catch (err) {
-        assert.equal(err.message, 'expected a callback function');
-        cb();
-      }
     });
   });
 });
