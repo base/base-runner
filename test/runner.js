@@ -3,9 +3,8 @@
 require('mocha');
 var path = require('path');
 var assert = require('assert');
-var generators = require('base-generators');
 var argv = require('minimist')(process.argv.slice(2));
-var Base = require('base');
+var Base = require('./support');
 var base;
 
 var fixtures = path.resolve.bind(path, __dirname, 'fixtures');
@@ -25,16 +24,11 @@ describe('.runner', function() {
   var error = console.error;
 
   beforeEach(function() {
-    // temporarily silence stderr
-    // console.error = function() {};
-    Base.use(function() {
-      this.isApp = true;
-    });
-    Base.use(generators());
+    console.error = function() {};
   });
 
   afterEach(function() {
-    // console.error = error;
+    console.error = error;
   });
 
   describe('errors', function() {
@@ -56,10 +50,10 @@ describe('.runner', function() {
       });
     });
 
-    it('should error when a lift-off config object is not passed', function(cb) {
+    it('should error when a liftoff config object is not passed', function(cb) {
       runner(Base, null, {}, function(err, app, runnerContext) {
         assert(err);
-        assert.equal(err.message, 'expected the second argument to be a lift-off config object');
+        assert.equal(err.message, 'expected the second argument to be a liftoff config object');
         cb();
       });
     });
@@ -73,7 +67,7 @@ describe('.runner', function() {
     });
   });
 
-  describe('...', function() {
+  describe('runner', function() {
     it('should set "env" on app.cache.runnerContext', function(cb) {
       runner(Base, config, argv, function(err, app, runnerContext) {
         if (err) return cb(err);

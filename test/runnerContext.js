@@ -3,9 +3,8 @@
 require('mocha');
 var path = require('path');
 var assert = require('assert');
-var generators = require('base-generators');
 var argv = require('minimist')(process.argv.slice(2));
-var Base = require('base');
+var Base = require('./support');
 var base;
 
 var fixtures = path.resolve.bind(path, __dirname, 'fixtures');
@@ -25,11 +24,6 @@ describe('.runnerContext', function() {
   var error = console.error;
 
   beforeEach(function() {
-    Base.use(function() {
-      this.isApp = true;
-    });
-    Base.use(generators());
-    // silence stderr temporarily
     console.error = function() {};
   });
 
