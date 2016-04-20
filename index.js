@@ -170,6 +170,7 @@ function runner(Ctor, config, argv, cb) {
         cb(null, base, ctx);
       });
     } catch (err) {
+      console.log(err.stack);
       cb(err);
     }
   });
