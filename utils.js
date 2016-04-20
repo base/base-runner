@@ -10,7 +10,12 @@ require = utils; // eslint-disable-line
  * Utils
  */
 
+require('base-cli-process', 'cli');
+require('base-config-process', 'config');
 require('base-generators', 'generators');
+require('base-project', 'project');
+require('base-runtimes', 'runtimes');
+require('mixin-deep', 'merge');
 require('log-utils', 'log');
 require('os-homedir', 'home');
 require = fn; // eslint-disable-line
