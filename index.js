@@ -133,6 +133,10 @@ function runner(Ctor, config, argv, cb) {
       base.cwd = env.cwd;
       handleTaskErrors(base, env);
 
+      if (typeof config.lookup === 'function') {
+        base.option('lookup', config.lookup(base));
+      }
+
       emit('init', base, ctx);
       diff('application initialized');
 
