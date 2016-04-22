@@ -129,49 +129,55 @@ function runner(Ctor, config, argv, cb) {
        * Create our `base` instance
        */
 
-      var base = new Base(argv);
-      base.cwd = env.cwd;
-      handleTaskErrors(base, env);
+      var app = new Base(argv);
+      app.cwd = env.cwd;
+      handleTaskErrors(app, env);
 
       if (typeof config.lookup === 'function') {
-        base.option('lookup', config.lookup(base));
+        app.option('lookup', config.lookup(app));
       }
 
-      emit('init', base, ctx);
+      emit('init', app, ctx);
       diff('application initialized');
 
       /**
-       * Load plugins onto the `base` instance
+       * Load plugins onto the `app` instance
        */
 
-      base.use(utils.project());
-      base.use(utils.runtimes());
-      base.use(utils.config());
-      base.use(utils.cli(argv));
+      app.use(utils.project());
+      app.use(utils.runtimes());
+      app.use(utils.config());
+      app.use(utils.cli(argv));
       diff('plugins loaded');
 
       /**
        * Set `runnerContext`
        */
 
-      base.set('cache.runnerContext', ctx);
+      app.set('cache.runnerContext', ctx);
 
       /**
-       * Resolve configfile in the user's cwd (`assemblefile.js`, etc)
+       * Resolve "configfile" in the user's cwd:
+       *   - verbfile.js
+       *   - assemblefile.js
+       *   - generator.js
+       *   - updatefile.js
        */
 
-      runner.resolveConfig(base, config, env);
+      runner.resolveConfig(app, config, env);
+
+      // log time diff and emit `postInit`
       diff('initialized ' + config.name);
-      emit('postInit', base, ctx);
+      emit('postInit', app, ctx);
 
       /**
        * Emit `finished`, callback
        */
 
       process.nextTick(function() {
-        emit('finished', base, ctx);
+        emit('finished', app, ctx);
         diff('finished');
-        cb(null, base, ctx);
+        cb(null, app, ctx);
       });
     } catch (err) {
       console.log(err.stack);
@@ -188,7 +194,12 @@ runner.resolveConfig = function(app, config, env) {
   var filepath = path.resolve(config.cwd, env.configName);
   if (env.configPath && ~env.configPath.indexOf(filepath)) {
     utils.configPath('using ' + env.configName, env.configPath);
-    app.generator('default', env.configPath);
+    var gen = app.register('default', env.configPath);
+
+    if (gen && gen.env && gen.env.instance.parent !== app) {
+      utils.merge(gen.cache, app.cache);
+      app.extendWith(gen);
+    }
   }
 };
 
