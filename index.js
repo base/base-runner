@@ -1,7 +1,6 @@
 'use strict';
 
 var path = require('path');
-var Time = require('time-diff');
 var debug = require('debug')('base:runner');
 var Liftoff = require('liftoff');
 var utils = require('./utils');
@@ -47,19 +46,11 @@ function runner(Ctor, config, argv, cb) {
   }
 
   /**
-   * Start timings
-   */
-
-  var time = new Time(argv);
-  var diff = time.diff('init', argv);
-  diff('modules loaded');
-
-  /**
    * Shallow clone options
    */
 
   argv = utils.merge({_: []}, argv);
-  config = utils.merge({cwd: process.cwd(), extensions: {'.js': null}}, config);
+  config = utils.merge({cwd: process.cwd(), extensions: {'.js': null }}, config);
   config.processTitle = config.processTitle || config.name;
   config.moduleName = config.moduleName || config.name;
   config.configName = config.configName || config.name + 'file';
@@ -92,8 +83,7 @@ function runner(Ctor, config, argv, cb) {
    */
 
   var CLI = new Liftoff(config);
-  utils.timestamp('initializing ' + config.name);
-  diff('config loaded');
+  utils.timestamp('starting ' + config.name);
 
   /**
    * Load environment
@@ -101,85 +91,33 @@ function runner(Ctor, config, argv, cb) {
 
   CLI.launch(argv, function(env) {
     debug('launching CLI');
-    diff('environment loaded');
 
     env.name = config.name;
     env.configName = config.configName;
     env.configFile = env.configName + '.js';
 
-    /**
-     * Create `runnerContext`
-     */
-
     var ctx = new RunnerContext(argv, config, env);
-    diff('runnerContext initialized');
-
-    /**
-     * Get the `Base` constructor to use
-     */
-
     try {
       var Base = env.modulePath ? require(env.modulePath) : Ctor;
       ctx.Base = Base;
 
-      var emit = emitRunnerEvents(Base);
-      emit('preInit', ctx);
+      // get the instance to use
+      var base = new Base(utils.merge({}, ctx.options, argv));
+      base.set('cache.runnerContext', ctx);
+      base.option(config);
 
-      /**
-       * Create our `base` instance
-       */
+      // load plugins
+      base.use(utils.project());
+      base.use(utils.config());
+      base.use(utils.cli());
 
-      var opts = utils.merge({}, ctx.pkg[env.name], ctx.json, ctx.options);
-      var app = new Base(utils.merge({}, opts, argv));
-      app.cwd = env.cwd;
-      handleTaskErrors(app, env);
+      // process `argv` and set on cache
+      base.set('cache.argv', base.argv(argv));
+      base.set('cache.env', ctx);
 
-      if (typeof config.lookup === 'function') {
-        app.option('lookup', config.lookup(app));
-      }
-
-      emit('init', app, ctx);
-      diff('application initialized');
-
-      /**
-       * Load plugins onto the `app` instance
-       */
-
-      app.use(utils.project());
-      app.use(utils.runtimes());
-      app.use(utils.config());
-      app.use(utils.cli(argv));
-      diff('plugins loaded');
-
-      /**
-       * Set `runnerContext`
-       */
-
-      app.set('cache.runnerContext', ctx);
-
-      /**
-       * Resolve "configfile" in the user's cwd:
-       *   - verbfile.js
-       *   - assemblefile.js
-       *   - generator.js
-       *   - updatefile.js
-       */
-
-      runner.resolveConfig(app, config, env);
-
-      // log time diff and emit `postInit`
-      diff('initialized ' + config.name);
-      emit('postInit', app, ctx);
-
-      /**
-       * Emit `finished`, callback
-       */
-
-      process.nextTick(function() {
-        emit('finished', app, ctx);
-        diff('finished');
-        cb(null, app, ctx);
-      });
+      // load local `[config]file.js` if one exists
+      runner.resolveConfig(base, config, env);
+      cb(null, base, ctx);
     } catch (err) {
       console.log(err.stack);
       cb(err);
@@ -188,18 +126,23 @@ function runner(Ctor, config, argv, cb) {
 }
 
 /**
- * Resolve the config file to use
+ * Resolve the config file to use in the user's cwd:
+ *   - verbfile.js
+ *   - assemblefile.js
+ *   - generator.js
+ *   - updatefile.js
  */
 
-runner.resolveConfig = function(app, config, env) {
+runner.resolveConfig = function(base, config, env) {
   var filepath = path.resolve(config.cwd, env.configName);
+
   if (env.configPath && ~env.configPath.indexOf(filepath)) {
     utils.configPath('using ' + env.configName, env.configPath);
-    var gen = app.register('default', env.configPath);
+    var gen = base.register('default', env.configPath);
 
-    if (gen && gen.env && gen.env.instance.parent !== app) {
-      utils.merge(gen.cache, app.cache);
-      app.extendWith(gen);
+    if (gen && gen.env && gen.env.instance.parent !== base) {
+      utils.merge(gen.cache, base.cache);
+      base.extendWith(gen);
     }
   }
 };
@@ -218,27 +161,9 @@ function RunnerContext(argv, config, env) {
   this.options = utils.merge({}, this.pkg[env.name].options, this.json.options);
 }
 
-/**
- * Handle task errors
- * TODO: should this be moved to implementations?
- * (e.g. "verb/lib/commands/tasks.js")
- */
-
-function handleTaskErrors(app, env) {
-  app.on('error', function(err) {
-    if (err.message === 'no default task defined') {
-      var fp = path.relative(app.cwd, env.configPath);
-      console.warn(utils.log.timestamp, 'no tasks or generators defined in ' + fp + ', stopping.');
-      app.emit('done');
-    }
-    console.error(err.stack);
-    process.exit(1);
-  });
-}
-
 function loadPkg(cwd, env) {
   var pkgPath = path.resolve(cwd, 'package.json');
-  var pkg = {};
+  var pkg = {options: {}};
   if (utils.exists(pkgPath)) {
     pkg = require(pkgPath);
     pkg[env.name] = pkg[env.name] || {};
@@ -249,7 +174,7 @@ function loadPkg(cwd, env) {
 
 function loadConfig(cwd, env) {
   var jsonPath = path.resolve(cwd, '.' + env.name + 'rc.json');
-  var json = {};
+  var json = {options: {}};
   if (utils.exists(jsonPath)) {
     json = require(jsonPath);
     json.options = json.options || {};
@@ -276,19 +201,6 @@ function validateRunnerArgs(Ctor, config, argv, cb) {
   if (typeof Ctor !== 'function' || typeof Ctor.namespace !== 'function') {
     return new Error('expected the first argument to be a Base constructor');
   }
-}
-
-/**
- * Emit `runner`
- */
-
-function emitRunnerEvents(Base) {
-  return function(name) {
-    var args = [].slice.call(arguments, 1);
-    args.unshift();
-    Base.emit.bind(Base, 'runner:' + name).apply(Base, args);
-    Base.emit.bind(Base, 'runner').apply(Base, arguments);
-  };
 }
 
 /**

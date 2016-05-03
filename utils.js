@@ -12,9 +12,7 @@ require = utils; // eslint-disable-line
 
 require('base-cli-process', 'cli');
 require('base-config-process', 'config');
-require('base-generators', 'generators');
 require('base-project', 'project');
-require('base-runtimes', 'runtimes');
 require('fs-exists-sync', 'exists');
 require('mixin-deep', 'merge');
 require('log-utils', 'log');
