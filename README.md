@@ -25,7 +25,7 @@ runner(Base, config, argv, function(err, app, runnerContext) {
 
 ## API
 
-### [runner](index.js#L36)
+### [runner](index.js#L35)
 
 Create a `runner` with the given `constructor`, [liftoff](https://github.com/js-cli/js-liftoff) `config` object, `argv` object and `callback` function.
 
