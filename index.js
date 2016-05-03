@@ -129,7 +129,8 @@ function runner(Ctor, config, argv, cb) {
        * Create our `base` instance
        */
 
-      var app = new Base(argv);
+      var opts = utils.merge({}, ctx.pkg[env.name], ctx.json, ctx.options);
+      var app = new Base(utils.merge({}, opts, argv));
       app.cwd = env.cwd;
       handleTaskErrors(app, env);
 
@@ -212,6 +213,9 @@ function RunnerContext(argv, config, env) {
   this.argv = argv;
   this.config = config;
   this.env = env;
+  this.json = loadConfig(this.argv.cwd, this.env);
+  this.pkg = loadPkg(this.argv.cwd, this.env);
+  this.options = utils.merge({}, this.pkg[env.name].options, this.json.options);
 }
 
 /**
@@ -224,12 +228,33 @@ function handleTaskErrors(app, env) {
   app.on('error', function(err) {
     if (err.message === 'no default task defined') {
       var fp = path.relative(app.cwd, env.configPath);
-      console.warn('No tasks or generators defined in ' + fp + ', stopping.');
-      process.exit();
+      console.warn(utils.log.timestamp, 'no tasks or generators defined in ' + fp + ', stopping.');
+      app.emit('done');
     }
     console.error(err.stack);
     process.exit(1);
   });
+}
+
+function loadPkg(cwd, env) {
+  var pkgPath = path.resolve(cwd, 'package.json');
+  var pkg = {};
+  if (utils.exists(pkgPath)) {
+    pkg = require(pkgPath);
+    pkg[env.name] = pkg[env.name] || {};
+    pkg[env.name].options = pkg[env.name].options || {};
+  }
+  return pkg;
+}
+
+function loadConfig(cwd, env) {
+  var jsonPath = path.resolve(cwd, '.' + env.name + 'rc.json');
+  var json = {};
+  if (utils.exists(jsonPath)) {
+    json = require(jsonPath);
+    json.options = json.options || {};
+  }
+  return json;
 }
 
 /**
