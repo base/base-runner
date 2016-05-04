@@ -104,7 +104,6 @@ function runner(Ctor, config, argv, cb) {
       // get the instance to use
       var base = new Base(utils.merge({}, ctx.options, argv));
       base.set('cache.runnerContext', ctx);
-      base.option(config);
 
       // load plugins
       base.use(utils.project());
@@ -113,6 +112,7 @@ function runner(Ctor, config, argv, cb) {
 
       // process `argv` and set on cache
       base.set('cache.argv', base.argv(argv));
+      base.set('cache.config', ctx.pkgConfig);
       base.set('cache.env', ctx);
 
       // load local `[config]file.js` if one exists
@@ -158,7 +158,8 @@ function RunnerContext(argv, config, env) {
   this.env = env;
   this.json = loadConfig(this.argv.cwd, this.env);
   this.pkg = loadPkg(this.argv.cwd, this.env);
-  this.options = utils.merge({}, this.pkg[env.name].options, this.json.options);
+  this.pkgConfig = this.pkg[env.name] || {};
+  this.options = utils.merge({}, this.pkgConfig.options, this.json.options);
 }
 
 function loadPkg(cwd, env) {
