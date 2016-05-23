@@ -2,7 +2,6 @@
 
 var gulp = require('gulp');
 var mocha = require('gulp-mocha');
-var unused = require('gulp-unused');
 var istanbul = require('gulp-istanbul');
 var eslint = require('gulp-eslint');
 var unused = require('gulp-unused');
@@ -28,7 +27,7 @@ gulp.task('lint', function() {
 gulp.task('unused', function() {
   var keys = Object.keys(require('./utils.js'));
   return gulp.src(['index.js', 'utils.js'])
-    .pipe(unused({keys: keys}))
+    .pipe(unused({keys: keys}));
 });
 
 gulp.task('default', ['test', 'lint']);

@@ -5,7 +5,6 @@ var path = require('path');
 var assert = require('assert');
 var argv = require('minimist')(process.argv.slice(2));
 var Base = require('./support');
-var base;
 
 var fixtures = path.resolve.bind(path, __dirname, 'fixtures');
 var runner = require('..');

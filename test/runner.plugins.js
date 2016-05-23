@@ -5,11 +5,9 @@ var path = require('path');
 var assert = require('assert');
 var argv = require('minimist')(process.argv.slice(2));
 var Base = require('./support');
-var base;
 
 var runner = require('..');
 var fixtures = path.resolve.bind(path, __dirname, 'fixtures');
-var runner = require('..');
 var config = {
   name: 'foo',
   cwd: fixtures(),
@@ -22,6 +20,8 @@ var config = {
 };
 
 runner(Base, config, argv, function(err, app, runnerContext) {
+  if (err) return console.error(err);
+
   describe('runner plugins', function() {
     describe('app.pkg', function() {
       it('should expose an app.pkg object', function() {
