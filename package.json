@@ -1,7 +1,7 @@
 {
   "name": "base-runner",
   "description": "Orchestrate multiple instances of base-methods at once.",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "homepage": "https://github.com/node-base/base-runner",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
   "repository": "node-base/base-runner",
@@ -21,8 +21,8 @@
     "test": "mocha"
   },
   "dependencies": {
-    "base-cli-process": "^0.1.10",
-    "base-config-process": "^0.1.4",
+    "base-cli-process": "^0.1.12",
+    "base-config-process": "^0.1.6",
     "base-project": "^0.2.1",
     "debug": "^2.2.0",
     "fs-exists-sync": "^0.1.0",
@@ -33,8 +33,8 @@
     "os-homedir": "^1.0.1"
   },
   "devDependencies": {
-    "base": "^0.8.1",
-    "base-generators": "^0.3.0",
+    "base": "^0.10.0",
+    "base-generators": "^0.4.0",
     "gulp": "^3.9.1",
     "gulp-eslint": "^2.0.0",
     "gulp-format-md": "^0.1.9",
@@ -42,7 +42,7 @@
     "gulp-mocha": "^2.2.0",
     "gulp-unused": "^0.1.2",
     "minimist": "^1.2.0",
-    "mocha": "^2.5.1"
+    "mocha": "^2.5.3"
   },
   "keywords": [
     "base",
@@ -56,15 +56,10 @@
       "gulp-format-md"
     ],
     "reflinks": [
-      "base",
-      "base-data",
-      "base-option",
-      "base-pipeline",
-      "expand-args",
+      "verb",
+      "verb-readme-generator",
       "liftoff",
-      "minimist",
-      "templates",
-      "verb"
+      "base"
     ],
     "related": {
       "list": [
