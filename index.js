@@ -144,7 +144,7 @@ runner.resolveConfig = function(base, config, env) {
     base.set('cache.hasDefault', true);
     var gen = base.register('default', env.configPath);
 
-    if (gen && gen.env && gen.env.instance.parent !== base) {
+    if (gen && gen.env && gen.env.app !== base) {
       utils.merge(gen.cache, base.cache);
       base.extendWith(gen);
     }
