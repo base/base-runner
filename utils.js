@@ -1,5 +1,6 @@
 'use strict';
 
+var os = require('os');
 var path = require('path');
 var utils = require('lazy-cache')(require);
 var fn = require;
@@ -15,7 +16,6 @@ require('base-project', 'project');
 require('fs-exists-sync', 'exists');
 require('mixin-deep', 'merge');
 require('log-utils', 'log');
-require('os-homedir', 'home');
 require = fn; // eslint-disable-line
 
 /**
@@ -53,7 +53,7 @@ utils.homeRelative = function(filepath) {
   if (!utils.isString(filepath)) {
     throw new TypeError('expected filepath to be a string');
   }
-  filepath = path.relative(utils.home(), path.resolve(filepath));
+  filepath = path.relative(os.homedir(), path.resolve(filepath));
   if (filepath.charAt(0) === '/') {
     filepath = filepath.slice(1);
   }

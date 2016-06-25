@@ -107,9 +107,7 @@ function runner(Ctor, config, argv, cb) {
       base.set('cache.runnerContext', ctx);
 
       // load plugins
-      base.use(utils.project());
-      base.use(utils.config());
-      base.use(utils.cli());
+      runner.loadPlugins(base);
 
       // process `argv` and set on cache
       base.set('cache.argv', base.argv(argv));
@@ -149,6 +147,12 @@ runner.resolveConfig = function(base, config, env) {
       base.extendWith(gen);
     }
   }
+};
+
+runner.loadPlugins = function(base) {
+  base.use(utils.project());
+  base.use(utils.config());
+  base.use(utils.cli());
 };
 
 /**
