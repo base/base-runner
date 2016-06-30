@@ -140,11 +140,12 @@ runner.resolveConfig = function(base, config, env) {
 
     base.set('cache.configPath', env.configPath);
     base.set('cache.hasDefault', true);
-    var gen = base.register('default', env.configPath);
 
+    var fn = require(env.configPath);
+    var gen = base.generator('default', fn);
     if (gen && gen.env && gen.env.app !== base) {
       utils.merge(gen.cache, base.cache);
-      base.extendWith(gen);
+      base.use(fn);
     }
   }
 };
