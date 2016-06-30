@@ -1,7 +1,7 @@
 {
   "name": "base-runner",
   "description": "Orchestrate multiple instances of base-methods at once.",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "homepage": "https://github.com/node-base/base-runner",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
   "repository": "node-base/base-runner",
