@@ -1,8 +1,13 @@
 'use strict';
 
+var fs = require('fs');
 var path = require('path');
-var debug = require('debug')('base:runner');
 var Liftoff = require('liftoff');
+var merge = require('mixin-deep');
+var debug = require('debug')('base:runner');
+var project = require('base-project');
+var config = require('base-config-process');
+var cli = require('base-cli-process');
 var utils = require('./utils');
 
 /**
@@ -33,12 +38,12 @@ var utils = require('./utils');
  */
 
 function runner(Ctor, config, argv, cb) {
-  debug('initializing <%s>, called from <%s>', __filename, module.parent.id);
+  var id = (module.parent && module.parent.id) || path.resolve(__dirname, '../..');
+  debug('initializing <%s>, called from <%s>', __filename, id);
 
   /**
    * handle runner arguments errors
    */
-
   var err = validateRunnerArgs(Ctor, config, argv, cb);
   if (err) {
     cb(err);
@@ -49,8 +54,8 @@ function runner(Ctor, config, argv, cb) {
    * Shallow clone options
    */
 
-  argv = utils.merge({_: []}, argv);
-  config = utils.merge({cwd: process.cwd(), extensions: {'.js': null }}, config);
+  argv = merge({_: []}, argv);
+  config = merge({cwd: process.cwd(), extensions: { '.js': null }}, config);
   config.processTitle = config.processTitle || config.name;
   config.moduleName = config.moduleName || config.name;
   config.configName = config.configName || config.name + 'file';
@@ -58,7 +63,7 @@ function runner(Ctor, config, argv, cb) {
   /**
    * Set cwd (if not defined)
    *
-   *   $ verb --cwd="lib"
+   *   $ app --cwd="lib"
    *
    */
 
@@ -69,11 +74,11 @@ function runner(Ctor, config, argv, cb) {
   /**
    * Custom config file
    *
-   *   $ verb --verbfile="docs/foo.js"
+   *   $ app --verbfile="docs/foo.js"
    *
    */
 
-  var customFile = argv[config.configName];
+  var customFile = argv.configfile || argv[config.configName];
   if (customFile) {
     argv.configPath = path.resolve(config.cwd, customFile);
   }
@@ -103,8 +108,9 @@ function runner(Ctor, config, argv, cb) {
 
       // get the instance to use
       var base = new Base();
-      utils.merge(base.options, utils.merge({}, ctx.options, argv));
+      base.options = merge({}, base.options, merge({}, ctx.options, argv));
       base.set('cache.runnerContext', ctx);
+
 
       // load plugins
       runner.loadPlugins(base);
@@ -136,24 +142,23 @@ runner.resolveConfig = function(base, config, env) {
   var filepath = path.resolve(config.cwd, env.configName);
 
   if (env.configPath && ~env.configPath.indexOf(filepath)) {
-    utils.configPath('using ' + env.configName, env.configPath);
-
+    utils.configPath('using', env.configPath);
     base.set('cache.configPath', env.configPath);
     base.set('cache.hasDefault', true);
 
     var fn = require(env.configPath);
     var gen = base.generator('default', fn);
     if (gen && gen.env && gen.env.app !== base) {
-      utils.merge(gen.cache, base.cache);
+      merge(gen.cache, base.cache);
       base.use(fn);
     }
   }
 };
 
 runner.loadPlugins = function(base) {
-  base.use(utils.project());
-  base.use(utils.config());
-  base.use(utils.cli());
+  base.use(project());
+  base.use(config());
+  base.use(cli());
 };
 
 /**
@@ -168,13 +173,13 @@ function RunnerContext(argv, config, env) {
   this.json = loadConfig(this.argv.cwd, this.env);
   this.pkg = loadPkg(this.argv.cwd, this.env);
   this.pkgConfig = this.pkg[env.name] || {};
-  this.options = utils.merge({}, this.pkgConfig.options, this.json.options);
+  this.options = merge({}, this.pkgConfig.options, this.json.options);
 }
 
 function loadPkg(cwd, env) {
   var pkgPath = path.resolve(cwd, 'package.json');
   var pkg = {options: {}};
-  if (utils.exists(pkgPath)) {
+  if (fs.existsSync(pkgPath)) {
     pkg = require(pkgPath);
     pkg[env.name] = pkg[env.name] || {};
     pkg[env.name].options = pkg[env.name].options || {};
@@ -185,7 +190,7 @@ function loadPkg(cwd, env) {
 function loadConfig(cwd, env) {
   var jsonPath = path.resolve(cwd, '.' + env.name + 'rc.json');
   var json = {options: {}};
-  if (utils.exists(jsonPath)) {
+  if (fs.existsSync(jsonPath)) {
     json = require(jsonPath);
     json.options = json.options || {};
   }
