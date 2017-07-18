@@ -4,6 +4,11 @@
   "version": "0.9.0",
   "homepage": "https://github.com/node-base/base-runner",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "contributors": [
+    "Brian Woodward (https://twitter.com/doowb)",
+    "Charlike Mike Reagent (https://i.am.charlike.online)",
+    "Jon Schlinkert (http://twitter.com/jonschlinkert)"
+  ],
   "repository": "node-base/base-runner",
   "bugs": {
     "url": "https://github.com/node-base/base-runner/issues"
@@ -26,56 +31,66 @@
     "base-project": "^0.2.1",
     "debug": "^2.6.8",
     "homedir-polyfill": "^1.0.1",
-    "liftoff": "^2.2.4",
+    "liftoff": "^2.3.0",
     "log-utils": "^0.2.1",
     "mixin-deep": "^1.2.0"
   },
   "devDependencies": {
     "base": "^0.13.0",
     "base-generators": "^0.4.6",
-    "mocha": "^3.4.2",
-    "minimist": "^1.2.0",
     "gulp": "^3.9.1",
+    "gulp-eslint": "^4.0.0",
+    "gulp-format-md": "^1.0.0",
+    "gulp-istanbul": "^1.1.2",
     "gulp-mocha": "^3.0.1",
-    "gulp-istanbul": "^1.1.1",
-    "gulp-eslint": "^3.0.1",
     "gulp-unused": "^0.2.1",
-    "gulp-format-md": "^0.1.12"
+    "minimist": "^1.2.0",
+    "mocha": "^3.4.2"
   },
   "keywords": [
+    "api",
+    "app",
+    "application",
     "base",
+    "base-plugin",
     "baseplugin",
+    "building-blocks",
+    "create",
+    "framework",
     "plugin",
-    "runner"
+    "plugins",
+    "runner",
+    "tool",
+    "toolkit",
+    "tools"
   ],
   "verb": {
+    "toc": false,
+    "run": true,
+    "layout": "default",
+    "tasks": [
+      "readme"
+    ],
     "plugins": [
       "gulp-format-md"
-    ],
-    "reflinks": [
-      "base",
-      "liftoff",
-      "verb",
-      "verb-readme-generator"
     ],
     "related": {
       "list": [
         "base",
         "base-generators",
-        "base-options",
+        "base-option",
         "base-plugins",
         "base-store",
-        "base-tasks"
+        "base-task"
       ]
     },
-    "toc": false,
-    "run": true,
-    "layout": "default",
     "lint": {
       "reflinks": true
     },
-    "tasks": [
-      "readme"
+    "reflinks": [
+      "base",
+      "liftoff",
+      "minimist"
     ]
   }
 }
