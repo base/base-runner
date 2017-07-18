@@ -1,6 +1,6 @@
 # base-runner [![NPM version](https://img.shields.io/npm/v/base-runner.svg?style=flat)](https://www.npmjs.com/package/base-runner) [![NPM monthly downloads](https://img.shields.io/npm/dm/base-runner.svg?style=flat)](https://npmjs.org/package/base-runner) [![NPM total downloads](https://img.shields.io/npm/dt/base-runner.svg?style=flat)](https://npmjs.org/package/base-runner) [![Linux Build Status](https://img.shields.io/travis/node-base/base-runner.svg?style=flat&label=Travis)](https://travis-ci.org/node-base/base-runner)
 
-> Orchestrate multiple instances of base-methods at once.
+> Orchestrate multiple instances of base at once.
 
 ## Install
 
