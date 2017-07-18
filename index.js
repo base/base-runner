@@ -111,7 +111,6 @@ function runner(Ctor, config, argv, cb) {
       base.options = merge({}, base.options, merge({}, ctx.options, argv));
       base.set('cache.runnerContext', ctx);
 
-
       // load plugins
       runner.loadPlugins(base);
 
@@ -121,10 +120,13 @@ function runner(Ctor, config, argv, cb) {
       base.set('cache.env', ctx);
 
       // load local `[config]file.js` if one exists
-      runner.resolveConfig(base, config, env);
+      var fn = runner.resolveConfig(base, config, env);
+      if (fn instanceof Base) {
+        base = fn;
+      }
+
       cb(null, base, ctx);
     } catch (err) {
-      console.log(err.stack);
       cb(err);
     }
   });
@@ -150,7 +152,14 @@ runner.resolveConfig = function(base, config, env) {
     var gen = base.generator('default', fn);
     if (gen && gen.env && gen.env.app !== base) {
       merge(gen.cache, base.cache);
-      base.use(fn);
+      if (typeof fn === 'function') {
+        base.use(fn);
+        return;
+      }
+
+      if (fn instanceof base.constructor) {
+        return fn;
+      }
     }
   }
 };
